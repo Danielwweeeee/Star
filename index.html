@@ -266,7 +266,7 @@
 
 <script>
     // ==========================================
-    // 💥 你的 FIREBASE 設定區 (已為您填入最完美的真實凭证)
+    // 💥 你的 FIREBASE 設定區
     // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyAgdr-5L8keEFU9tXsqqh0WEt59hWcrVLA",
@@ -326,7 +326,7 @@
         });
     }
 
-    // 與 GAS 通訊，執行自動註冊和快照同步
+    // 與 GAS 通訊，執行自動註冊和快照同步 (已修正非同步 Bug 與移除 no-cors)
     function syncUserWithGas(firebaseUser) {
         showLoading("正在同步雲端陀螺手數據...");
         
@@ -337,28 +337,32 @@
             gmail: firebaseUser.email
         };
 
+        // 1. 先把資料送到 GAS 進行註冊或登入
         fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, // 配合 GAS 預設接收格式優化
+            body: new URLSearchParams({ payload: JSON.stringify(payload) }).toString()
         })
-        .then(() => {
-            // 發送 GET 快照撈取最新數值
-            fetch(GAS_WEB_APP_URL)
-            .then(res => res.json())
-            .then(allPlayers => {
-                hideLoading();
-                let matched = allPlayers.find(p => String(p.uid).trim() === String(firebaseUser.uid).trim());
-                if(matched) {
-                    currentUserData = matched;
-                    renderStarProfile();
-                }
-            });
+        .then(response => {
+            // 2. 等待 POST 寫入完畢並回應後，才發送 GET 撈最新快照
+            return fetch(GAS_WEB_APP_URL);
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("網路回應不正常");
+            return res.json();
+        })
+        .then(allPlayers => {
+            hideLoading();
+            let matched = allPlayers.find(p => String(p.uid).trim() === String(firebaseUser.uid).trim());
+            if(matched) {
+                currentUserData = matched;
+                renderStarProfile();
+            }
         })
         .catch(err => {
             hideLoading();
-            console.error(err);
+            console.error("同步失敗:", err);
+            alert("雲端同步失敗，請確認網頁已部署至 GitHub Pages 且非直接點開檔案。詳細原因: " + err.message);
         });
     }
 
@@ -394,9 +398,11 @@
     function fetchStarLeaderboard() {
         const tbody = document.getElementById('star-leaderboard-body');
         fetch(GAS_WEB_APP_URL)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("無法連接資料庫");
+            return res.json();
+        })
         .then(data => {
-            // 過濾並排除掉可能沒有星星的欄位，以降序排列
             data.sort((a, b) => b.stars - a.stars);
             tbody.innerHTML = '';
             
@@ -465,26 +471,28 @@
 
         fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: "battle_transfer", winnerUid: winnerUid, loserUid: loserUid })
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ payload: JSON.stringify({ action: "battle_transfer", winnerUid: winnerUid, loserUid: loserUid }) }).toString()
         })
         .then(() => {
             hideLoading();
             alert("⚔️ 吸星完畢！您成功吸取 1 顆星星！系統正在更新您的數據。");
             switchPage('star-profile');
             syncUserWithGas(auth.currentUser);
+        })
+        .catch(err => {
+            hideLoading();
+            alert("吸星通訊錯誤: " + err.message);
         });
     }
 
     // ==========================================
-    // 📊 以下保留你原本 index(3).html 的正賽排程演算法
+    // 📊 以下保留原正賽排程演算法
     // ==========================================
     function initTournament(mode) {
         tournamentMode = mode;
         currentRound = 1;
         isFinished = false;
-        // 抓取原本報名的人數或預設模擬數據
         players = [
             { id: 1, name: "陀螺手 A", score: 0, swh: 0, status: "active" },
             { id: 2, name: "陀螺手 B", score: 0, swh: 0, status: "active" },
@@ -541,7 +549,7 @@
         btn.disabled = true; btn.textContent = '提交安全名冊中…';
         
         fetch(form.action, {
-            method: 'POST', mode: 'no-cors',
+            method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(new FormData(form)).toString()
         }).then(() => {
