@@ -266,7 +266,7 @@
 
 <script>
     // ==========================================
-    // 💥 你的 FIREBASE 設定區
+    // 💥 FIREBASE 設定區
     // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyAgdr-5L8keEFU9tXsqqh0WEt59hWcrVLA",
@@ -278,16 +278,14 @@
         measurementId: "G-FYJVE58T3F"
     };
     
-    // 初始化 Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
     // ==========================================
-    // 💥 你的 GOOGLE APPS SCRIPT (GAS) 網址設定區
+    // 💥 GAS 網址設定區
     // ==========================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby9f8wY2QYd0zkGv3BpxuiYRhJ5jC61mWRjVU0k02dnI7YnKO4GjlIC0KH95ecjbUcpUw/exec"; 
 
-    // 全域變數
     let currentUserData = null;
     let starHtml5QrcodeScanner = null;
     let players = [];
@@ -296,7 +294,6 @@
     let tournamentMode = null; 
     let isFinished = false;
 
-    // 監聽 Firebase 登入狀態
     auth.onAuthStateChanged(user => {
         if (user) {
             syncUserWithGas(user);
@@ -306,7 +303,6 @@
         }
     });
 
-    // Google 登入發動
     function loginWithGoogle() {
         showLoading("正在喚醒 Google 驗證服務...");
         const provider = new firebase.auth.GoogleAuthProvider();
@@ -317,7 +313,6 @@
         });
     }
 
-    // 安全登出
     function logoutGoogle() {
         auth.signOut().then(() => {
             currentUserData = null;
@@ -326,8 +321,8 @@
         });
     }
 
-    // 與 GAS 通訊，執行自動註冊和快照同步 (已修正非同步 Bug 與移除 no-cors)
-    function syncUserWithGas(firebaseUser) {
+    // 🌟 採用 async/await 架構，徹底解決非同步與欄位對齊 Bug
+    async function syncUserWithGas(firebaseUser) {
         showLoading("正在同步雲端陀螺手數據...");
         
         const payload = {
@@ -337,36 +332,39 @@
             gmail: firebaseUser.email
         };
 
-        // 1. 先把資料送到 GAS 進行註冊或登入
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, // 配合 GAS 預設接收格式優化
-            body: new URLSearchParams({ payload: JSON.stringify(payload) }).toString()
-        })
-        .then(response => {
-            // 2. 等待 POST 寫入完畢並回應後，才發送 GET 撈最新快照
-            return fetch(GAS_WEB_APP_URL);
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("網路回應不正常");
-            return res.json();
-        })
-        .then(allPlayers => {
-            hideLoading();
-            let matched = allPlayers.find(p => String(p.uid).trim() === String(firebaseUser.uid).trim());
+        try {
+            // 1. 投遞註冊資料
+            await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ payload: JSON.stringify(payload) }).toString()
+            });
+
+            // 2. 獲取最新的星盤資料
+            const res = await fetch(GAS_WEB_APP_URL);
+            if (!res.ok) throw new Error("資料庫回應異常");
+            const allPlayers = await res.json();
+
+            // 🛠️ 關鍵修正：將 p.UID 改成小寫的 p.uid，完美與你的 GAS 後端對齊！
+            let matched = allPlayers.find(p => String(p.uid || p.UID).trim() === String(firebaseUser.uid).trim());
+            
             if(matched) {
                 currentUserData = matched;
+                // 兼容處理，確保後續讀取格式統一
+                currentUserData.uid = matched.uid || matched.UID;
+                currentUserData.stars = matched.stars !== undefined ? matched.stars : (matched.STARS || 0);
                 renderStarProfile();
+            } else {
+                alert("在資料庫中找不到對應的陀螺手，請重新登入。");
             }
-        })
-        .catch(err => {
+        } catch (err) {
+            console.error("同步錯誤:", err);
+            alert("雲端同步失敗，詳細原因: " + err.message);
+        } finally {
             hideLoading();
-            console.error("同步失敗:", err);
-            alert("雲端同步失敗，請確認網頁已部署至 GitHub Pages 且非直接點開檔案。詳細原因: " + err.message);
-        });
+        }
     }
 
-    // 渲染個人星盤
     function renderStarProfile() {
         const loginArea = document.getElementById('star-login-area');
         const dashboard = document.getElementById('star-dashboard');
@@ -384,7 +382,6 @@
         document.getElementById('star-disp-gmail').innerText = currentUserData.gmail;
         document.getElementById('star-disp-count').innerText = currentUserData.stars;
 
-        // 生成加密 UID QR Code
         document.getElementById('qrcode').innerHTML = "";
         new QRCode(document.getElementById("qrcode"), {
             text: String(currentUserData.uid).trim(),
@@ -394,7 +391,6 @@
         });
     }
 
-    // 讀取自由星戰排行榜
     function fetchStarLeaderboard() {
         const tbody = document.getElementById('star-leaderboard-body');
         fetch(GAS_WEB_APP_URL)
@@ -403,9 +399,14 @@
             return res.json();
         })
         .then(data => {
-            data.sort((a, b) => b.stars - a.stars);
-            tbody.innerHTML = '';
+            // 兼容處理欄位排序
+            data.sort((a, b) => {
+                const sB = b.stars !== undefined ? b.stars : (b.STARS || 0);
+                const sA = a.stars !== undefined ? a.stars : (a.STARS || 0);
+                return sB - sA;
+            });
             
+            tbody.innerHTML = '';
             if(data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-secondary);">目前尚無玩家透過 Google 帳號登入星戰。</td></tr>';
                 return;
@@ -418,20 +419,20 @@
                 if(idx === 1) rankLabel = '🥈 2';
                 if(idx === 2) rankLabel = '🥉 3';
                 
+                const pStars = p.stars !== undefined ? p.stars : (p.STARS || 0);
                 tr.innerHTML = `
                     <td style="font-weight:900; ${idx<3?'color:var(--gold);':''}">${rankLabel}</td>
                     <td style="text-align: left; padding-left:15px; font-weight:bold;">${p.name}</td>
-                    <td style="color:var(--gold); font-weight:900; font-size:15px;">${p.stars} ⭐</td>
+                    <td style="color:var(--gold); font-weight:900; font-size:15px;">${pStars} ⭐</td>
                 `;
                 tbody.appendChild(tr);
             });
         })
         .catch(err => {
-            tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red);">連線失敗，請檢查 GAS 部署是否允許「任何人」存取。</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red);">連線失敗，請稍後再試。</td></tr>';
         });
     }
 
-    // 相機吸星功能
     function startStarScanner() {
         if(!currentUserData) { alert('請先進入【我的星盤】完成 Google 帳號登入！'); return; }
         document.getElementById('reader').style.display = 'block';
@@ -457,7 +458,7 @@
         }
     }
 
-    function onStarScanSuccess(decodedText) {
+    async function onStarScanSuccess(decodedText) {
         stopStarScanner();
         const loserUid = decodedText.trim();
         const winnerUid = String(currentUserData.uid).trim();
@@ -469,26 +470,22 @@
 
         showLoading("對決完結！正在雲端扣除敗者並為您增加 1⭐...");
 
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ payload: JSON.stringify({ action: "battle_transfer", winnerUid: winnerUid, loserUid: loserUid }) }).toString()
-        })
-        .then(() => {
-            hideLoading();
+        try {
+            await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ payload: JSON.stringify({ action: "battle_transfer", winnerUid: winnerUid, loserUid: loserUid }) }).toString()
+            });
             alert("⚔️ 吸星完畢！您成功吸取 1 顆星星！系統正在更新您的數據。");
             switchPage('star-profile');
             syncUserWithGas(auth.currentUser);
-        })
-        .catch(err => {
-            hideLoading();
+        } catch (err) {
             alert("吸星通訊錯誤: " + err.message);
-        });
+        } finally {
+            hideLoading();
+        }
     }
 
-    // ==========================================
-    // 📊 以下保留原正賽排程演算法
-    // ==========================================
     function initTournament(mode) {
         tournamentMode = mode;
         currentRound = 1;
@@ -541,7 +538,6 @@
         }
     }
 
-    // 常規報名表單攔截
     document.getElementById('registration-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const form = this;
@@ -561,7 +557,6 @@
         });
     });
 
-    // 科技感分頁切換
     function switchPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -570,7 +565,7 @@
         const targetBtn = document.querySelector(`nav button[onclick*="${pageId}"]`);
         if (targetBtn) targetBtn.classList.add('active');
         
-        if (pageId === 'star-profile' && auth.currentUser) { renderStarProfile(); }
+        if (pageId === 'star-profile' && auth.currentUser) { if(!currentUserData) syncUserWithGas(auth.currentUser); else renderStarProfile(); }
         if (pageId === 'star-leaderboard') { fetchStarLeaderboard(); }
         if (pageId !== 'star-scan') { stopStarScanner(); }
     }
