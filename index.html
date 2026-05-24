@@ -85,23 +85,27 @@
                 <div class="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700 shadow-xl relative">
                     
                     <div class="relative inline-block mt-2">
-                        <div id="user-avatar-display" class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 bg-slate-900 flex items-center justify-center text-4xl cursor-pointer hover:scale-105 transition duration-200 select-none">🥏</div>
-                        <span class="absolute -bottom-1 right-0 bg-amber-500 text-slate-900 text-[10px] font-bold px-1 rounded border border-slate-800 cursor-pointer">修改</span>
+                        <div id="user-avatar-container" onclick="triggerPhotoUpload()" class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 bg-slate-900 flex items-center justify-center text-4xl cursor-pointer hover:scale-105 transition duration-200 overflow-hidden select-none">
+                            <span id="avatar-emoji-placeholder" class="block">🥏</span>
+                            <img id="avatar-image-display" class="hidden w-full h-full object-cover rounded-full" src="" alt="">
+                        </div>
+                        <span onclick="triggerPhotoUpload()" class="absolute -bottom-1 -right-1 bg-amber-500 text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-800 cursor-pointer shadow-md">相片</span>
+                        
+                        <input type="file" id="photo-file-input" accept="image/*" class="hidden" onchange="uploadPhoto(this)">
                     </div>
 
                     <h2 id="user-name" class="text-xl font-bold mt-2">玩家名字</h2>
                     
-                    <div id="avatar-selector-panel" class="hidden mt-4 p-3 bg-slate-900 rounded-xl border border-slate-700">
-                        <p class="text-xs text-slate-400 mb-2">請選擇你的陀螺手 Icon：</p>
-                        <div class="grid grid-cols-4 gap-2 text-2xl">
-                            <button onclick="changeAvatar('🥏')" class="p-2 hover:bg-slate-700 rounded transition">🥏</button>
-                            <button onclick="changeAvatar('🔥')" class="p-2 hover:bg-slate-700 rounded transition">🔥</button>
-                            <button onclick="changeAvatar('⚡')" class="p-2 hover:bg-slate-700 rounded transition">⚡</button>
-                            <button onclick="changeAvatar('🐉')" class="p-2 hover:bg-slate-700 rounded transition">🐉</button>
-                            <button onclick="changeAvatar('🦁')" class="p-2 hover:bg-slate-700 rounded transition">🦁</button>
-                            <button onclick="changeAvatar('🦅')" class="p-2 hover:bg-slate-700 rounded transition">🦅</button>
-                            <button onclick="changeAvatar('🦊')" class="p-2 hover:bg-slate-700 rounded transition">🦊</button>
-                            <button onclick="changeAvatar('👑')" class="p-2 hover:bg-slate-700 rounded transition">👑</button>
+                    <div class="mt-4">
+                        <p class="text-[11px] text-slate-400 mb-1">或快速更換內置專屬徽章：</p>
+                        <div class="flex justify-center gap-1 text-xl max-w-xs mx-auto bg-slate-900 p-1.5 rounded-lg border border-slate-700/60">
+                            <button onclick="changeAvatar('🥏')" class="hover:bg-slate-700 px-1 rounded transition">🥏</button>
+                            <button onclick="changeAvatar('🔥')" class="hover:bg-slate-700 px-1 rounded transition">🔥</button>
+                            <button onclick="changeAvatar('⚡')" class="hover:bg-slate-700 px-1 rounded transition">⚡</button>
+                            <button onclick="changeAvatar('🐉')" class="hover:bg-slate-700 px-1 rounded transition">🐉</button>
+                            <button onclick="changeAvatar('🦁')" class="hover:bg-slate-700 px-1 rounded transition">🦁</button>
+                            <button onclick="changeAvatar('🦅')" class="hover:bg-slate-700 px-1 rounded transition">🦅</button>
+                            <button onclick="changeAvatar('👑')" class="hover:bg-slate-700 px-1 rounded transition">👑</button>
                         </div>
                     </div>
                     
@@ -185,12 +189,6 @@
                     document.getElementById('bottom-nav').classList.add('hidden');
                 }
             });
-
-            // 點擊頭像區塊顯示或隱藏面板
-            document.getElementById('user-avatar-display').addEventListener('click', () => {
-                const panel = document.getElementById('avatar-selector-panel');
-                panel.classList.toggle('hidden');
-            });
         };
 
         function switchPage(pageId) {
@@ -199,7 +197,6 @@
             if (pageId !== 'scan' && html5QrcodeScanner) {
                 html5QrcodeScanner.clear();
             }
-            document.getElementById('avatar-selector-panel').classList.add('hidden');
         }
 
         // 註冊邏輯
@@ -224,7 +221,7 @@
             if (error) {
                 alert('註冊失敗: ' + error.message);
             } else {
-                alert('註冊成功！快去體驗吧！');
+                alert('註冊成功！系統已自動為你登入。');
             }
         });
 
@@ -251,6 +248,40 @@
         document.getElementById('btn-logout').addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
         });
+
+        function triggerPhotoUpload() {
+            document.getElementById('photo-file-input').click();
+        }
+
+        // 上傳相片至 Supabase Storage
+        async function uploadPhoto(input) {
+            if (!input.files || input.files.length === 0 || !currentUser) return;
+            
+            const file = input.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // 1. 上傳檔案到名為 'avatars' 的 Storage Bucket
+            const { data: uploadData, error: uploadError } = await supabaseClient
+                .storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                alert('上傳失敗，請確認 Supabase 已建立名為 "avatars" 的 Public Bucket！\n錯誤訊息: ' + uploadError.message);
+                return;
+            }
+
+            // 2. 取得公開瀏覽網址 (Public URL)
+            const { data: { publicUrl } } = supabaseClient
+                .storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            // 3. 更新回資料庫
+            await changeAvatar(publicUrl);
+        }
 
         async function handleUserLogin(user) {
             currentUser = user;
@@ -281,12 +312,8 @@
 
             document.getElementById('user-name').innerText = profile.username;
             
-            // 🔥 關鍵防錯修復：如果資料庫裡儲存的是舊的網址網址，強制將它轉為預設 Emoji 🥏
-            if (profile.avatar_url && profile.avatar_url.startsWith('http')) {
-                document.getElementById('user-avatar-display').innerText = '🥏';
-            } else {
-                document.getElementById('user-avatar-display').innerText = profile.avatar_url || '🥏';
-            }
+            // 呼叫修正後的渲染函數
+            renderAvatar(profile.avatar_url, 'avatar-emoji-placeholder', 'avatar-image-display');
             
             document.getElementById('user-stars').innerText = profile.stars;
 
@@ -300,20 +327,37 @@
             });
         }
 
-        // 修改頭像功能
-        async function changeAvatar(emojiIcon) {
+        async function changeAvatar(avatarValue) {
             if (!currentUser) return;
             
             const { error } = await supabaseClient
                 .from('profiles')
-                .update({ avatar_url: emojiIcon })
+                .update({ avatar_url: avatarValue })
                 .eq('id', currentUser.id);
 
             if (error) {
                 alert('更新頭像失敗: ' + error.message);
             } else {
-                document.getElementById('user-avatar-display').innerText = emojiIcon;
-                document.getElementById('avatar-selector-panel').classList.add('hidden');
+                renderAvatar(avatarValue, 'avatar-emoji-placeholder', 'avatar-image-display');
+            }
+        }
+
+        // 🛠️ 修正後的頭像核心渲染函數：確保兩者切換乾淨，不重疊
+        function renderAvatar(urlOrEmoji, emojiSpanId, imgId) {
+            const emojiSpan = document.getElementById(emojiSpanId);
+            const imgTag = document.getElementById(imgId);
+            
+            if (urlOrEmoji && urlOrEmoji.startsWith('http')) {
+                // 如果是網址 -> 顯示 <img>，隱藏 Emoji
+                emojiSpan.classList.add('hidden');
+                imgTag.classList.remove('hidden');
+                imgTag.src = urlOrEmoji;
+            } else {
+                // 如果是 Emoji -> 顯示 Emoji，隱藏 <img> 並清空 src 避免破圖
+                imgTag.classList.add('hidden');
+                imgTag.src = ""; 
+                emojiSpan.classList.remove('hidden');
+                emojiSpan.innerText = urlOrEmoji || '🥏';
             }
         }
 
@@ -377,18 +421,20 @@
                     if(index === 1) medal = '🥈';
                     if(index === 2) medal = '🥉';
 
-                    // 處理排行榜上的舊網址過濾，如果是網址就顯示 🥏
-                    let displayIcon = player.avatar_url;
-                    if (!displayIcon || displayIcon.startsWith('http')) {
-                        displayIcon = '🥏';
+                    // 排行榜修正：確保網址顯示圖片，純文字顯示 Emoji
+                    let avatarHtml = ``;
+                    if (player.avatar_url && player.avatar_url.startsWith('http')) {
+                        avatarHtml = `<img src="${player.avatar_url}" class="w-full h-full object-cover rounded-full">`;
+                    } else {
+                        avatarHtml = `<span class="text-sm select-none">${player.avatar_url || '🥏'}</span>`;
                     }
 
                     const row = `
                         <tr class="hover:bg-slate-700/50">
                             <td class="p-3 text-center font-bold">${medal}</td>
                             <td class="p-3 flex items-center gap-2">
-                                <div class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-sm select-none">
-                                    ${displayIcon}
+                                <div class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden">
+                                    ${avatarHtml}
                                 </div>
                                 <span class="${player.id === currentUser?.id ? 'text-amber-400 font-bold' : ''}">${player.username}</span>
                             </td>
