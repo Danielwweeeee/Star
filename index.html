@@ -1,577 +1,280 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>極旋盃 S1 — 極旋屋 Beyblade X</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
-    
+    <title>全球爆旋陀螺 戰星排行榜 (Beyblade Star Tracker)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-
     <style>
-        :root {
-            --bg-deep: #060b12;
-            --bg-surface: #0c1521;
-            --bg-card: #111e2f;
-            --cyan: #00d2ff;
-            --cyan-glow: rgba(0,210,255,0.12);
-            --orange: #ff6b1a;
-            --orange-glow: rgba(255,107,26,0.12);
-            --gold: #e8b840;
-            --gold-glow: rgba(232,184,64,0.12);
-            --text-primary: #e2eaf5;
-            --text-secondary: #7a90ad;
-            --border: #1a2a40;
-            --border-bright: #263d5c;
-            --green: #10b981;
-            --red: #ef4444;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Noto Sans HK', Arial, sans-serif;
-            background-color: var(--bg-deep); color: var(--text-primary);
-            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-            overflow-x: hidden;
-        }
-
-        /* ===== BRAND BAR & NAVIGATION ===== */
-        .brand-bar { width: 100%; background: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; }
-        .brand-logo { display: flex; align-items: center; gap: 11px; text-decoration: none; cursor: pointer; }
-        .brand-logo-svg { width: 34px; height: 34px; animation: brand-spin 12s linear infinite; }
-        @keyframes brand-spin { to { transform: rotate(360deg); } }
-        .brand-name-zh { font-size: 17px; font-weight: 900; color: var(--text-primary); letter-spacing: 2px; line-height: 1.2; }
-        .brand-name-en { font-size: 9px; font-weight: 500; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; }
-        .ig-pill { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; color: var(--text-secondary); font-size: 12px; padding: 6px 14px; border: 1px solid var(--border-bright); border-radius: 20px; background: rgba(255,255,255,0.02); transition: 0.2s; }
-        .ig-pill:hover { color: var(--cyan); border-color: var(--cyan); background: var(--cyan-glow); }
-        
-        nav { width: 100%; background: rgba(12,21,33,0.96); border-bottom: 1px solid var(--border); display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14px); padding: 6px 8px; flex-wrap: wrap; gap: 4px; }
-        .nav-btn { background: none; border: none; color: var(--text-secondary); padding: 10px 12px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1; text-align: center; min-width: 75px; border-radius: 8px; transition: 0.2s; }
-        .nav-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
-        .nav-btn.active { color: var(--cyan); background: var(--cyan-glow); font-weight: 900; }
-
-        /* ===== PAGES & CARDS ===== */
-        .page { display: none; width: 100%; max-width: 1200px; padding: 20px 14px 40px; animation: fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
-        .page.active { display: block; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; }
-        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: transparent; }
-        .card.accent-orange::before { background: var(--orange); }
-        .card.accent-cyan::before { background: var(--cyan); }
-        .card h2 { font-family: 'Bebas Neue', 'Noto Sans HK', sans-serif; font-size: 20px; font-weight: 700; color: var(--orange); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
-
-        /* ===== UI ELEMENTS ===== */
-        .form-group { margin-bottom: 16px; text-align: left; }
-        .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
-        .form-control { width: 100%; background: var(--bg-surface); border: 1px solid var(--border-bright); border-radius: 8px; padding: 12px; color: var(--text-primary); font-size: 14px; transition: 0.2s; }
-        .form-control:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 8px var(--cyan-glow); }
-        
-        .submit-btn { width: 100%; background: linear-gradient(135deg, var(--orange), #ff843d); border: none; color: #fff; padding: 14px; font-weight: 900; border-radius: 8px; cursor: pointer; font-size: 14px; letter-spacing: 1px; transition: 0.2s; box-shadow: 0 4px 12px var(--orange-glow); }
-        .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,107,26,0.3); }
-        .submit-btn:disabled { background: var(--border-bright); color: var(--text-secondary); cursor: not-allowed; transform: none; box-shadow: none; }
-        
-        .google-btn { background: #ffffff !important; color: #000000 !important; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px; box-shadow: 0 4px 12px rgba(255,255,255,0.08); }
-        .google-btn:hover { background: #f3f3f3 !important; }
-
-        /* 星盤樣式 */
-        .star-container { margin: 20px 0; text-align: center; }
-        .star-count { font-family: 'Bebas Neue', sans-serif; font-size: 68px; color: var(--gold); line-height: 1; text-shadow: 0 0 20px rgba(232,184,64,0.35); }
-        #qrcode { background: #ffffff; padding: 12px; width: 174px; height: 174px; margin: 20px auto; border-radius: 10px; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
-        #reader { width: 100%; max-width: 380px; margin: 15px auto; border-radius: 10px; overflow: hidden; border: 2px solid var(--border-bright); }
-
-        /* 表格與列表 */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px 6px; text-align: center; border-bottom: 1px solid var(--border); font-size: 13px; }
-        th { background: rgba(0,210,255,0.04); color: var(--text-secondary); font-weight: 700; font-size: 12px; text-transform: uppercase; }
-        tr:hover td { background: rgba(255,255,255,0.01); }
-
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-align: center; }
-        .badge-cyan { background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0,210,255,0.2); }
-        .badge-orange { background: var(--orange-glow); color: var(--orange); border: 1px solid rgba(255,107,26,0.2); }
-
-        /* 賽事對戰對陣區 */
-        .match-box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
-        .player-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
-        .player-name { font-weight: 500; font-size: 14px; }
-        .player-score { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--cyan); width: 30px; text-align: center; }
-
-        /* 讀取遮罩 */
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(6,11,18,0.88); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; gap: 15px; backdrop-filter: blur(4px); }
-        .spinner { width: 42px; height: 42px; border: 4px solid rgba(0,210,255,0.1); border-top-color: var(--cyan); border-radius: 50%; animation: brand-spin 1s linear infinite; }
-        footer { width: 100%; background: var(--bg-surface); border-top: 1px solid var(--border); padding: 24px; text-align: center; margin-top: auto; font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; }
+        .page { display: none; }
+        .active { display: block; }
     </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white font-sans">
 
-<div class="loading-overlay" id="loading">
-    <div class="spinner"></div>
-    <div id="loading-text" style="color: var(--cyan); font-weight: 700; font-size: 14px;">安全連線雲端資料庫...</div>
-</div>
-
-<div class="brand-bar">
-    <div class="brand-logo" onclick="switchPage('home')">
-        <svg class="brand-logo-svg" viewBox="0 0 38 38" fill="none">
-            <circle cx="19" cy="19" r="17" stroke="rgba(0,210,255,0.3)" stroke-width="1.5"/>
-            <circle cx="19" cy="19" r="12" stroke="rgba(255,107,26,0.4)" stroke-width="1.5"/>
-            <circle cx="19" cy="19" r="3" fill="#00d2ff"/>
-        </svg>
-        <div>
-            <div class="brand-name-zh">極旋屋</div>
-            <div class="brand-name-en">UltraSpin HK</div>
-        </div>
-    </div>
-    <a href="https://www.instagram.com/ultraspin.hk" target="_blank" class="ig-pill">
-        <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:middle;margin-right:3px;"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.927 3.927 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.916 3.916 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.444-.048-3.298c-.04-.851-.175-1.433-.372-1.941a3.926 3.926 0 0 0-.923-1.417A3.911 3.911 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.999 0h.003zm-.544 1.466C7.304 1.477 7.07 1.48 6.551 1.503c-.808.037-1.373.165-1.862.355a2.503 2.503 0 0 0-.91.593c-.242.241-.421.486-.593.91-.19.489-.318 1.054-.355 1.862C2.793 5.3 2.79 5.534 2.79 6.551c0 .193 0 .4-.002.544a50.485 50.485 0 0 0 .002 4.708c.037.808.165 1.373.355 1.862.172.422.351.667.593.91.242.241.487.421.91.593.489.19 1.054.318 1.862.355.518.022.753.026 1.77.026s1.77-.004 2.27-.026c.808-.037 1.373-.165 1.862-.355.422-.172.667-.351.91-.593.241-.242.421-.487.593-.91.19-.489.318-1.054.355-1.862.022-.518.026-.753.026-1.77s-.004-1.77-.026-2.27c-.037-.808-.165-1.373-.355-1.862a2.508 2.508 0 0 0-.593-.91 2.508 2.508 0 0 0-.91-.593c-.489-.19-1.054-.318-1.862-.355C10.702 1.477 10.467 1.47 9.45 1.47s-1.77.004-2.27.026zM8 3.891a4.11 4.11 0 1 1 0 8.22 4.11 4.11 0 0 1 0-8.22zm0 1.466a2.645 2.645 0 1 0 0 5.291 2.645 2.645 0 0 0 0-5.291zm4.117-2.613a.96.96 0 1 1-1.922 0 .96.96 0 0 1 1.922 0z"/></svg>@ultraspin.hk
-    </a>
-</div>
-
-<nav>
-    <button class="nav-btn active" onclick="switchPage('home')">大賽首頁</button>
-    <button class="nav-btn" onclick="switchPage('star-profile')">⭐我的星盤</button>
-    <button class="nav-btn" onclick="switchPage('star-scan')">⚔️掃描吸星</button>
-    <button class="nav-btn" onclick="switchPage('star-leaderboard')">🏆星霸榜</button>
-    <button class="nav-btn" onclick="switchPage('system')">📊賽事管理</button>
-    <button class="nav-btn" onclick="switchPage('register')">📝常規報名</button>
-</nav>
-
-<div id="page-home" class="page active">
-    <div class="card accent-cyan" style="text-align: center; padding: 35px 20px;">
-        <h1 style="font-family:'Bebas Neue'; font-size: 46px; color: var(--cyan); letter-spacing: 1px; line-height: 1.1;">極旋屋自由星戰賽</h1>
-        <p style="color:var(--text-secondary); margin-top:14px; font-size: 14px; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.6;">
-            全新現場互動升級！無需大會手動登錄，現場陀螺手只需直接點選上方「⭐我的星盤」以 Google 帳號安全登入，即可直接獲贈 <span style="color:var(--gold); font-weight:bold;">10 顆對戰星</span>。隨即可以亮出星盤或掃描贏家，加入現場吸星狂潮！
-        </p>
-        <div style="margin-top:25px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <button class="submit-btn" style="width:auto; padding:12px 24px; background:var(--cyan); color:#000; font-weight:900;" onclick="switchPage('star-profile')">前往登入 / 領取星盤</button>
-            <button class="submit-btn" style="width:auto; padding:12px 24px; background:transparent; border:1px solid var(--border-bright); color:var(--text-primary);" onclick="switchPage('star-leaderboard')">觀看實時星霸榜</button>
-        </div>
-    </div>
-</div>
-
-<div id="page-star-profile" class="page">
-    <div class="card accent-orange" id="star-login-area">
-        <h2>陀螺手帳戶登入</h2>
-        <p style="color:var(--text-secondary); font-size:13px; margin: 10px 0 20px; line-height: 1.5;">使用您的 Gmail 帳號一鍵授權登入。系統會透過加密 UID 自動在雲端建立名冊，並賦予您初始的 10 星星能量！</p>
-        <button class="submit-btn google-btn" onclick="loginWithGoogle()">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18" alt="Google">
-            使用 Google 帳號登入 / 註冊
-        </button>
-    </div>
-
-    <div class="card accent-cyan" id="star-dashboard" style="display:none;">
-        <div style="font-size:11px; font-weight:700; color:var(--cyan); letter-spacing:2px;">BEYBLADE X USER ENERGY DISC</div>
-        <h1 id="star-disp-name" style="font-family:'Bebas Neue', 'Noto Sans HK'; font-size:32px; margin-top:5px;">-</h1>
-        <p style="color:var(--text-secondary); font-size:12px; margin-bottom: 5px;" id="star-disp-gmail">-</p>
+    <div class="max-w-md mx-auto p-4 min-h-screen flex flex-col justify-between">
         
-        <div class="star-container">
-            <div style="font-size:12px; color:var(--text-secondary); font-weight: 500;">當前星星持有量</div>
-            <div class="star-count"><span id="star-disp-count">0</span> <span style="font-size:32px; color:var(--gold);">⭐</span></div>
-        </div>
+        <header class="text-center my-4">
+            <h1 class="text-3xl font-extrabold text-amber-400 tracking-wider">💥 BEYBLADE STARS</h1>
+            <p class="text-xs text-slate-400">全球陀螺決鬥計星系統</p>
+        </header>
+
+        <main class="flex-grow">
+            <div id="page-login" class="page active text-center py-10">
+                <p class="mb-6 text-slate-300">歡迎來到陀螺戰星網！請先登入以記錄你的戰績。</p>
+                <button id="btn-google-login" class="w-full bg-white text-slate-900 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-lg hover:bg-slate-100 transition">
+                    <img src="https://www.google.com/favicon.ico" class="w-5 h-5" alt="Google">
+                    使用 Google 帳號登入
+                </button>
+            </div>
+
+            <div id="page-dashboard" class="page space-y-6">
+                <div class="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700 shadow-xl">
+                    <img id="user-avatar" class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 mb-2" src="" alt="Avatar">
+                    <h2 id="user-name" class="text-xl font-bold">玩家名字</h2>
+                    
+                    <div class="mt-4 bg-slate-900 p-4 rounded-xl">
+                        <p class="text-xs text-amber-400 font-bold tracking-widest uppercase">目前星星數量</p>
+                        <div class="text-5xl font-black text-amber-400 my-1 flex justify-center items-center gap-1">
+                            ⭐ <span id="user-stars">10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700">
+                    <h3 class="font-bold mb-2 text-sm text-slate-300">讓對手掃描你進行對戰：</h3>
+                    <div id="qrcode" class="bg-white p-3 inline-block rounded-lg shadow-inner my-2"></div>
+                    <p class="text-xs text-slate-400 mt-2">對手贏了將會獲得你的一粒星</p>
+                </div>
+            </div>
+
+            <div id="page-scan" class="page space-y-4">
+                <h3 class="text-lg font-bold text-center text-amber-400">📷 掃描對方的 QR Code</h3>
+                <p class="text-xs text-slate-400 text-center">請對準對方的對戰 QR Code。打贏對方後即可奪取一粒星！</p>
+                <div id="reader" class="w-full overflow-hidden rounded-xl bg-black"></div>
+                <button onclick="switchPage('dashboard')" class="w-full bg-slate-700 py-2 rounded-lg text-sm">取消掃描</button>
+            </div>
+
+            <div id="page-leaderboard" class="page space-y-4">
+                <h3 class="text-xl font-bold text-center text-amber-400">🏆 全球星數排行榜</h3>
+                <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-700 text-slate-300 text-sm">
+                                <th class="p-3 text-center w-16">排名</th>
+                                <th class="p-3">玩家</th>
+                                <th class="p-3 text-right">星數</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body" class="divide-y divide-slate-700 text-sm">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <nav id="bottom-nav" class="hidden bg-slate-800 border-t border-slate-700 -mx-4 -mb-4 p-2 flex justify-around text-slate-400 text-xs mt-6">
+            <button onclick="switchPage('dashboard')" class="flex flex-col items-center p-2 gap-1 focus:text-amber-400">
+                <span>🏠</span><span>首頁</span>
+            </button>
+            <button onclick="startScanner()" class="flex flex-col items-center p-2 gap-1 focus:text-amber-400 bg-amber-500 text-slate-900 rounded-xl px-4 font-bold -mt-4 shadow-lg">
+                <span>📷</span><span>對戰 Scan</span>
+            </button>
+            <button onclick="loadLeaderboard(); switchPage('leaderboard')" class="flex flex-col items-center p-2 gap-1 focus:text-amber-400">
+                <span>🏆</span><span>排行榜</span>
+            </button>
+            <button id="btn-logout" class="flex flex-col items-center p-2 gap-1 text-red-400">
+                <span>🚪</span><span>登出</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // === ⚠️ 請替換成你自己的 Supabase 網址同埋 API Key ===
+        const SUPABASE_URL = 'https://rqeeoseodyyqoowzjdro.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_kZOI0G-2URfup1lKzME3uw_1tgvzMDl';
         
-        <div style="border-top: 1px solid var(--border); padding-top:16px; margin-top:20px;">
-            <p style="font-size:13px; color:var(--orange); font-weight:bold;">🛡️ 戰敗出示安全憑證：</p>
-            <p style="font-size:12px; color:var(--text-secondary); margin-top:4px; line-height:1.5;">若你在這場對決中不幸落敗，請向【贏家】出示下方的專屬安全 QR Code，供對方掃描吸取 1 顆星星。</p>
-        </div>
-        <div id="qrcode"></div>
-        <button class="submit-btn" style="background:none; border:1px solid var(--border-bright); color:var(--text-secondary); font-size:12px; padding:6px 14px; width:auto; margin-top:15px; box-shadow:none;" onclick="logoutGoogle()">安全登出帳號</button>
-    </div>
-</div>
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let currentUser = null;
+        let html5QrcodeScanner = null;
 
-<div id="page-star-scan" class="page">
-    <div class="card accent-orange">
-        <h2>⚔️ 戰勝對手！吸取星星</h2>
-        <p style="color:var(--text-secondary); font-size:13px; margin-bottom:18px;">此功能由【贏家】發動。請點擊開啟相機，對準【輸家】手機畫面的星盤二維碼進行掃描。</p>
-        <button class="submit-btn" id="star-start-scan-btn" style="background:linear-gradient(135deg, var(--cyan), #00a2ff); color:#000; box-shadow: 0 4px 12px rgba(0,210,255,0.2);" onclick="startStarScanner()">開啟對戰相機鏡頭</button>
-        <div id="reader" style="display:none;"></div>
-        <button class="submit-btn" id="star-stop-scan-btn" style="display:none; background:var(--red); box-shadow:none; margin-top:10px;" onclick="stopStarScanner()">關閉鏡頭</button>
-    </div>
-</div>
-
-<div id="page-star-leaderboard" class="page">
-    <div class="card accent-cyan">
-        <h2>🏆 自由星戰 — 星霸排行榜</h2>
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr><th style="width: 20%">排名</th><th style="text-align: left; padding-left:15px;">陀螺手</th><th style="width: 35%">累計星數</th></tr>
-                </thead>
-                <tbody id="star-leaderboard-body">
-                    <tr><td colspan="3" style="color:var(--text-secondary);">正在連接極旋星盤數據庫...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="page-system" class="page">
-    <div class="card accent-cyan">
-        <h2>📊 大賽核心主控台</h2>
-        <div style="display:flex; gap:10px; margin-bottom:20px; justify-content:center; flex-wrap:wrap;">
-            <button class="submit-btn" style="width:auto; padding:10px 18px; background:var(--border-bright);" onclick="initTournament('swiss')">啟動瑞士輪賽制</button>
-            <button class="submit-btn" style="width:auto; padding:10px 18px; background:var(--border-bright);" onclick="initTournament('knockout')">啟動單敗淘汰制</button>
-            <button class="submit-btn" style="width:auto; padding:10px 18px; background:var(--red);" onclick="resetSystem()">重置大賽</button>
-        </div>
-        <h3 id="round-title" style="font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--cyan); margin-bottom:15px;">尚未啟動賽制</h3>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;" id="tournament-grid">
-            <div>
-                <h4 style="color:var(--gold); margin-bottom:10px;">⚔️ 本輪對陣名單</h4>
-                <div id="matches-container"><p style="color:var(--text-secondary); font-size:13px;">等待賽制啟動...</p></div>
-            </div>
-            <div>
-                <h4 style="color:var(--orange); margin-bottom:10px;">📈 實時大賽總積分表</h4>
-                <div id="leaderboard-container"><p style="color:var(--text-secondary); font-size:13px;">暫無數據...</p></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="page-register" class="page">
-    <div class="card accent-orange">
-        <h2>📝 常規正賽選手報名</h2>
-        <form id="registration-form" action="https://script.google.com/macros/s/AKfycbz_K_Nia-X2S7uFwX9Y3rWscZshX5e-u-R81MAsRshUo30S0b7gL979I9n_M0Xw_SgD/exec" method="POST">
-            <div class="form-group">
-                <label>選手暱称 (Blader Name)</label>
-                <input type="text" name="name" class="form-control" placeholder="請輸入參賽隊員名稱" required>
-            </div>
-            <div class="form-group">
-                <label>聯絡電話 (WhatsApp)</label>
-                <input type="tel" name="phone" class="form-control" placeholder="僅供大賽緊急聯絡使用" required>
-            </div>
-            <div class="form-group">
-                <label>參賽組別</label>
-                <select name="group" class="form-control">
-                    <option value="無限制常規組">無限制常規組 (Open Group)</option>
-                    <option value="新手組">全新手體驗組</option>
-                </select>
-            </div>
-            <button type="submit" id="submit-btn" class="submit-btn">確認提交報名表</button>
-        </form>
-        <div id="register-success" style="display:none; color:var(--green); font-weight:bold; margin-top:15px; font-size:15px;">
-            🎉 報名成功！資料已寫入大賽數據庫，請準時前往賽場報到。
-        </div>
-    </div>
-</div>
-
-<footer>
-    <div style="font-weight:900; letter-spacing:2px; font-size:12px; color:var(--text-primary);">極旋屋 UltraSpin HK</div>
-    <div style="margin-top:4px; font-size:10px;">© 2026 Beyblade X 自由星戰系統 V2.5. All Rights Reserved.</div>
-</footer>
-
-<script>
-    // ==========================================
-    // 💥 FIREBASE 設定區
-    // ==========================================
-    const firebaseConfig = {
-        apiKey: "AIzaSyAgdr-5L8keEFU9tXsqqh0WEt59hWcrVLA",
-        authDomain: "ultraspin-star.firebaseapp.com",
-        projectId: "ultraspin-star",
-        storageBucket: "ultraspin-star.firebasestorage.app",
-        messagingSenderId: "656296867522",
-        appId: "1:656296867522:web:373f10fa279965890d6d5b",
-        measurementId: "G-FYJVE58T3F"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    // ==========================================
-    // 💥 GAS 網址設定區
-    // ==========================================
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby9f8wY2QYd0zkGv3BpxuiYRhJ5jC61mWRjVU0k02dnI7YnKO4GjlIC0KH95ecjbUcpUw/exec"; 
-
-    let currentUserData = null;
-    let starHtml5QrcodeScanner = null;
-    let players = [];
-    let matches = [];
-    let currentRound = 1;
-    let tournamentMode = null; 
-    let isFinished = false;
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            syncUserWithGas(user);
-        } else {
-            currentUserData = null;
-            renderStarProfile();
-        }
-    });
-
-    function loginWithGoogle() {
-        showLoading("正在喚醒 Google 驗證服務...");
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider)
-        .catch(err => {
-            hideLoading();
-            alert("Google 登入失敗: " + err.message);
-        });
-    }
-
-    function logoutGoogle() {
-        auth.signOut().then(() => {
-            currentUserData = null;
-            renderStarProfile();
-            alert("已成功安全登出帳號。");
-        });
-    }
-
-    // 🌟 採用 async/await 架構，徹底解決非同步與欄位對齊 Bug
-    async function syncUserWithGas(firebaseUser) {
-        showLoading("正在同步雲端陀螺手數據...");
-        
-        const payload = {
-            action: "login_or_register",
-            uid: firebaseUser.uid,
-            name: firebaseUser.displayName || "神秘陀螺手",
-            gmail: firebaseUser.email
+        // 初始化檢查登入狀態
+        window.onload = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                handleUserLogin(session.user);
+            } else {
+                switchPage('login');
+            }
+            
+            // 監聽登入狀態改變
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    handleUserLogin(session.user);
+                } else {
+                    switchPage('login');
+                    document.getElementById('bottom-nav').classList.add('hidden');
+                }
+            });
         };
 
-        try {
-            // 1. 投遞註冊資料
-            await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ payload: JSON.stringify(payload) }).toString()
-            });
-
-            // 2. 獲取最新的星盤資料
-            const res = await fetch(GAS_WEB_APP_URL);
-            if (!res.ok) throw new Error("資料庫回應異常");
-            const allPlayers = await res.json();
-
-            // 🛠️ 關鍵修正：將 p.UID 改成小寫的 p.uid，完美與你的 GAS 後端對齊！
-            let matched = allPlayers.find(p => String(p.uid || p.UID).trim() === String(firebaseUser.uid).trim());
+        // 頁面切換功能
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${pageId}`).classList.add('active');
             
-            if(matched) {
-                currentUserData = matched;
-                // 兼容處理，確保後續讀取格式統一
-                currentUserData.uid = matched.uid || matched.UID;
-                currentUserData.stars = matched.stars !== undefined ? matched.stars : (matched.STARS || 0);
-                renderStarProfile();
-            } else {
-                alert("在資料庫中找不到對應的陀螺手，請重新登入。");
+            // 如果離開掃描頁面，關閉相機
+            if (pageId !== 'scan' && html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
             }
-        } catch (err) {
-            console.error("同步錯誤:", err);
-            alert("雲端同步失敗，詳細原因: " + err.message);
-        } finally {
-            hideLoading();
-        }
-    }
-
-    function renderStarProfile() {
-        const loginArea = document.getElementById('star-login-area');
-        const dashboard = document.getElementById('star-dashboard');
-        
-        if (!currentUserData) {
-            loginArea.style.display = 'block';
-            dashboard.style.display = 'none';
-            return;
         }
 
-        loginArea.style.display = 'none';
-        dashboard.style.display = 'block';
-
-        document.getElementById('star-disp-name').innerText = currentUserData.name;
-        document.getElementById('star-disp-gmail').innerText = currentUserData.gmail;
-        document.getElementById('star-disp-count').innerText = currentUserData.stars;
-
-        document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), {
-            text: String(currentUserData.uid).trim(),
-            width: 150, height: 150,
-            colorDark : "#060b12", colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-    }
-
-    function fetchStarLeaderboard() {
-        const tbody = document.getElementById('star-leaderboard-body');
-        fetch(GAS_WEB_APP_URL)
-        .then(res => {
-            if (!res.ok) throw new Error("無法連接資料庫");
-            return res.json();
-        })
-        .then(data => {
-            // 兼容處理欄位排序
-            data.sort((a, b) => {
-                const sB = b.stars !== undefined ? b.stars : (b.STARS || 0);
-                const sA = a.stars !== undefined ? a.stars : (a.STARS || 0);
-                return sB - sA;
+        // Google 登入按鈕
+        document.getElementById('btn-google-login').addEventListener('click', async () => {
+            await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.href }
             });
+        });
+
+        // 登出按鈕
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+        });
+
+        // 處理玩家登入後的資料邏輯
+        async function handleUserLogin(user) {
+            currentUser = user;
+            document.getElementById('bottom-nav').classList.remove('hidden');
+            switchPage('dashboard');
+
+            // 1. 檢查資料庫（profiles表）有冇呢個玩家，冇就創建（初始10粒星）
+            let { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile) {
+                const { data: newProfile, error: insertError } = await supabase
+                    .from('profiles')
+                    .insert([
+                        { 
+                            id: user.id, 
+                            username: user.user_metadata.full_name || '未知陀螺手', 
+                            avatar_url: user.user_metadata.avatar_url || '', 
+                            stars: 10 
+                        }
+                    ])
+                    .select()
+                    .single();
+                profile = newProfile;
+            }
+
+            // 2. 顯示玩家資料
+            document.getElementById('user-name').innerText = profile.username;
+            document.getElementById('user-avatar').src = profile.avatar_url;
+            document.getElementById('user-stars').innerText = profile.stars;
+
+            // 3. 生成玩家專屬的 QR Code (內容放玩家的 User ID)
+            document.getElementById("qrcode").innerHTML = ""; // 清空舊的
+            new QRCode(document.getElementById("qrcode"), {
+                text: profile.id,
+                width: 150,
+                height: 150,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff"
+            });
+        }
+
+        // 啟動相機掃描對手 QR Code
+        function startScanner() {
+            switchPage('scan');
             
-            tbody.innerHTML = '';
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-secondary);">目前尚無玩家透過 Google 帳號登入星戰。</td></tr>';
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                async (decodedText) => {
+                    // 掃描成功，decodedText 就是對方的 user_id
+                    html5QrcodeScanner.stop();
+                    await handleBattleWin(decodedText);
+                },
+                (errorMessage) => { /* 忽略掃描中的錯誤 */ }
+            ).catch(err => alert("無法啟動相機: " + err));
+        }
+
+        // 核心對戰邏輯：你掃描對方 = 你打贏左對方
+        async function handleBattleWin(loserId) {
+            if (loserId === currentUser.id) {
+                alert("唔可以自己同自己打呀！😂");
+                switchPage('dashboard');
                 return;
             }
 
-            data.forEach((p, idx) => {
-                const tr = document.createElement('tr');
-                let rankLabel = idx + 1;
-                if(idx === 0) rankLabel = '🥇 1';
-                if(idx === 1) rankLabel = '🥈 2';
-                if(idx === 2) rankLabel = '🥉 3';
-                
-                const pStars = p.stars !== undefined ? p.stars : (p.STARS || 0);
-                tr.innerHTML = `
-                    <td style="font-weight:900; ${idx<3?'color:var(--gold);':''}">${rankLabel}</td>
-                    <td style="text-align: left; padding-left:15px; font-weight:bold;">${p.name}</td>
-                    <td style="color:var(--gold); font-weight:900; font-size:15px;">${pStars} ⭐</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        })
-        .catch(err => {
-            tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red);">連線失敗，請稍後再試。</td></tr>';
-        });
-    }
-
-    function startStarScanner() {
-        if(!currentUserData) { alert('請先進入【我的星盤】完成 Google 帳號登入！'); return; }
-        document.getElementById('reader').style.display = 'block';
-        document.getElementById('star-stop-scan-btn').style.display = 'block';
-        document.getElementById('star-start-scan-btn').style.display = 'none';
-
-        starHtml5QrcodeScanner = new Html5Qrcode("reader");
-        starHtml5QrcodeScanner.start(
-            { facingMode: "environment" }, 
-            { fps: 10, qrbox: 250 },
-            onStarScanSuccess
-        ).catch(() => { stopStarScanner(); });
-    }
-
-    function stopStarScanner() {
-        if (starHtml5QrcodeScanner) {
-            starHtml5QrcodeScanner.stop().then(() => {
-                starHtml5QrcodeScanner = null;
-                document.getElementById('reader').style.display = 'none';
-                document.getElementById('star-stop-scan-btn').style.display = 'none';
-                document.getElementById('star-start-scan-btn').style.display = 'block';
-            });
-        }
-    }
-
-    async function onStarScanSuccess(decodedText) {
-        stopStarScanner();
-        const loserUid = decodedText.trim();
-        const winnerUid = String(currentUserData.uid).trim();
-
-        if (loserUid === winnerUid) {
-            alert("❌ 系統錯誤：不能自己掃描自己吸星！");
-            return;
-        }
-
-        showLoading("對決完結！正在雲端扣除敗者並為您增加 1⭐...");
-
-        try {
-            await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ payload: JSON.stringify({ action: "battle_transfer", winnerUid: winnerUid, loserUid: loserUid }) }).toString()
-            });
-            alert("⚔️ 吸星完畢！您成功吸取 1 顆星星！系統正在更新您的數據。");
-            switchPage('star-profile');
-            syncUserWithGas(auth.currentUser);
-        } catch (err) {
-            alert("吸星通訊錯誤: " + err.message);
-        } finally {
-            hideLoading();
-        }
-    }
-
-    function initTournament(mode) {
-        tournamentMode = mode;
-        currentRound = 1;
-        isFinished = false;
-        players = [
-            { id: 1, name: "陀螺手 A", score: 0, swh: 0, status: "active" },
-            { id: 2, name: "陀螺手 B", score: 0, swh: 0, status: "active" },
-            { id: 3, name: "陀螺手 C", score: 0, swh: 0, status: "active" },
-            { id: 4, name: "陀螺手 D", score: 0, swh: 0, status: "active" }
-        ];
-        generateRoundMatches();
-    }
-
-    function generateRoundMatches() {
-        document.getElementById('round-title').innerText = `當前進度：[${tournamentMode==='swiss'?'瑞士輪':'淘汰賽'}] 第 ${currentRound} 輪`;
-        const container = document.getElementById('matches-container');
-        container.innerHTML = "";
-        
-        matches = [];
-        for(let i=0; i<players.length; i+=2) {
-            matches.push({ p1: players[i], p2: players[i+1], p1Score: 0, p2Score: 0, done: false });
+            // 1. 先確認輸家重有冇星星
+            let { data: loserProfile } = await supabase.from('profiles').select('stars, username').eq('id', loserId).single();
             
-            const div = document.createElement('div');
-            div.className = "match-box";
-            div.innerHTML = `
-                <div class="player-row"><span>${players[i].name}</span><input type="number" class="form-control" style="width:60px; padding:4px;" value="0" id="m-${i}-p1"></div>
-                <div class="player-row"><span>${players[i+1].name}</span><input type="number" class="form-control" style="width:60px; padding:4px;" value="0" id="m-${i}-p2"></div>
-                <button class="submit-btn" style="padding:6px; font-size:12px; margin-top:5px;" onclick="saveMatchScore(${i})">提交此場比分</button>
-            `;
-            container.appendChild(div);
+            if (!loserProfile) {
+                alert("找不到該玩家的資料！");
+                switchPage('dashboard');
+                return;
+            }
+
+            if (loserProfile.stars <= 0) {
+                alert(`玩家 ${loserProfile.username} 已經冇晒星星（0粒星），你贏咗都攞唔到星！`);
+                switchPage('dashboard');
+                return;
+            }
+
+            // 2. 扣除輸家一粒星
+            await supabase.from('profiles').update({ stars: loserProfile.stars - 1 }).eq('id', loserId);
+
+            // 3. 加我一粒星
+            let { data: myProfile } = await supabase.from('profiles').select('stars').eq('id', currentUser.id).single();
+            await supabase.from('profiles').update({ stars: myProfile.stars + 1 }).eq('id', currentUser.id);
+
+            alert(`🎉 恭喜！你打贏咗 ${loserProfile.username}，成功奪取 1 粒星星！`);
+            
+            // 重新刷新個人頁面
+            handleUserLogin(currentUser);
         }
-        renderTournamentLeaderboard();
-    }
 
-    function saveMatchScore(index) {
-        const s1 = parseInt(document.getElementById(`m-${index}-p1`).value) || 0;
-        const s2 = parseInt(document.getElementById(`m-${index}-p2`).value) || 0;
-        alert(`已成功儲存比分 ${s1} : ${s2}`);
-    }
+        // 載入排行榜資料
+        async function loadLeaderboard() {
+            let { data: profiles, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .order('stars', { ascending: false })
+                .limit(20); // 顯示前20名
 
-    function renderTournamentLeaderboard() {
-        const container = document.getElementById('leaderboard-container');
-        container.innerHTML = "<table><thead><tr><th>名次</th><th>選手</th><th>得分</th></tr></thead><tbody>" + 
-            players.map((p,i)=>`<tr><td>${i+1}</td><td>${p.name}</td><td>${p.score}</td></tr>`).join('') + "</tbody></table>";
-    }
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
 
-    function resetSystem() {
-        if (confirm('警告：這將會清除所有大賽進度與常規比分紀錄。確定重置嗎？')) {
-            location.reload();
+            if (profiles) {
+                profiles.forEach((player, index) => {
+                    let medal = index + 1;
+                    if(index === 0) medal = '🥇';
+                    if(index === 1) medal = '🥈';
+                    if(index === 2) medal = '🥉';
+
+                    const row = `
+                        <tr class="hover:bg-slate-700/50">
+                            <td class="p-3 text-center font-bold">${medal}</td>
+                            <td class="p-3 flex items-center gap-2">
+                                <img src="${player.avatar_url}" class="w-6 h-6 rounded-full" alt="">
+                                <span class="${player.id === currentUser?.id ? 'text-amber-400 font-bold' : ''}">${player.username}</span>
+                            </td>
+                            <td class="p-3 text-right font-black text-amber-400">${player.stars} ⭐</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
         }
-    }
-
-    document.getElementById('registration-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        const btn = document.getElementById('submit-btn');
-        btn.disabled = true; btn.textContent = '提交安全名冊中…';
-        
-        fetch(form.action, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(new FormData(form)).toString()
-        }).then(() => {
-            form.style.display = 'none';
-            document.getElementById('register-success').style.display = 'block';
-        }).catch(() => {
-            alert('網路錯誤，請稍後再試。');
-            btn.disabled = false; btn.textContent = '確認報名';
-        });
-    });
-
-    function switchPage(pageId) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        
-        document.getElementById('page-' + pageId).classList.add('active');
-        const targetBtn = document.querySelector(`nav button[onclick*="${pageId}"]`);
-        if (targetBtn) targetBtn.classList.add('active');
-        
-        if (pageId === 'star-profile' && auth.currentUser) { if(!currentUserData) syncUserWithGas(auth.currentUser); else renderStarProfile(); }
-        if (pageId === 'star-leaderboard') { fetchStarLeaderboard(); }
-        if (pageId !== 'star-scan') { stopStarScanner(); }
-    }
-
-    function showLoading(text) { document.getElementById('loading-text').innerText = text; document.getElementById('loading').style.display = 'flex'; }
-    function hideLoading() { document.getElementById('loading').style.display = 'none'; }
-</script>
+    </script>
 </body>
 </html>
