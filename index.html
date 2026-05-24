@@ -83,8 +83,27 @@
 
             <div id="page-dashboard" class="page space-y-6">
                 <div class="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700 shadow-xl">
-                    <div class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 mb-2 bg-slate-900 flex items-center justify-center text-3xl">🥏</div>
+                    
+                    <div class="relative inline-block group">
+                        <div id="user-avatar-display" class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 mb-2 bg-slate-900 flex items-center justify-center text-3xl cursor-pointer hover:scale-105 transition duration-200">🥏</div>
+                        <span class="absolute bottom-1 right-0 bg-amber-500 text-slate-900 text-[10px] font-bold px-1 rounded border border-slate-800">修改</span>
+                    </div>
+
                     <h2 id="user-name" class="text-xl font-bold">玩家名字</h2>
+                    
+                    <div id="avatar-selector-panel" class="hidden mt-4 p-3 bg-slate-900 rounded-xl border border-slate-700 animate-fadeIn">
+                        <p class="text-xs text-slate-400 mb-2">請選擇你的陀螺手 Icon：</p>
+                        <div class="grid grid-cols-4 gap-2 text-2xl">
+                            <button onclick="changeAvatar('🥏')" class="p-2 hover:bg-slate-700 rounded transition">🥏</button>
+                            <button onclick="changeAvatar('🔥')" class="p-2 hover:bg-slate-700 rounded transition">🔥</button>
+                            <button onclick="changeAvatar('⚡')" class="p-2 hover:bg-slate-700 rounded transition">⚡</button>
+                            <button onclick="changeAvatar('🐉')" class="p-2 hover:bg-slate-700 rounded transition">🐉</button>
+                            <button onclick="changeAvatar('🦁')" class="p-2 hover:bg-slate-700 rounded transition">🦁</button>
+                            <button onclick="changeAvatar('🦅')" class="p-2 hover:bg-slate-700 rounded transition">🦅</button>
+                            <button onclick="changeAvatar('🦊')" class="p-2 hover:bg-slate-700 rounded transition">🦊</button>
+                            <button onclick="changeAvatar('👑')" class="p-2 hover:bg-slate-700 rounded transition">👑</button>
+                        </div>
+                    </div>
                     
                     <div class="mt-4 bg-slate-900 p-4 rounded-xl">
                         <p class="text-xs text-amber-400 font-bold tracking-widest uppercase">目前星星數量</p>
@@ -166,6 +185,12 @@
                     document.getElementById('bottom-nav').classList.add('hidden');
                 }
             });
+
+            // 點擊大頭像顯示/隱藏選擇面板
+            document.getElementById('user-avatar-display').addEventListener('click', () => {
+                const panel = document.getElementById('avatar-selector-panel');
+                panel.classList.toggle('hidden');
+            });
         };
 
         function switchPage(pageId) {
@@ -174,9 +199,11 @@
             if (pageId !== 'scan' && html5QrcodeScanner) {
                 html5QrcodeScanner.clear();
             }
+            // 切換頁面時自動收起頭像面板
+            document.getElementById('avatar-selector-panel').classList.add('hidden');
         }
 
-        // 獨立出的【註冊事件】
+        // 註冊邏輯
         document.getElementById('btn-register').addEventListener('click', async () => {
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
@@ -202,7 +229,7 @@
             }
         });
 
-        // 獨立出的【登入事件】
+        // 登入邏輯
         document.getElementById('btn-login').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -244,7 +271,7 @@
                         { 
                             id: user.id, 
                             username: user.user_metadata.full_name || '未知陀螺手', 
-                            avatar_url: 'https://placehold.co/150',
+                            avatar_url: '🥏', // 🆕 預設改用文字 Emoji 圖標
                             stars: 10 
                         }
                     ])
@@ -254,6 +281,7 @@
             }
 
             document.getElementById('user-name').innerText = profile.username;
+            document.getElementById('user-avatar-display').innerText = profile.avatar_url || '🥏';
             document.getElementById('user-stars').innerText = profile.stars;
 
             document.getElementById("qrcode").innerHTML = "";
@@ -264,6 +292,25 @@
                 colorDark : "#0f172a",
                 colorLight : "#ffffff"
             });
+        }
+
+        // 🆕 新增：修改頭像並儲存至 Supabase 的功能
+        async function changeAvatar(emojiIcon) {
+            if (!currentUser) return;
+            
+            // 1. 更新 Supabase 資料庫
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ avatar_url: emojiIcon })
+                .eq('id', currentUser.id);
+
+            if (error) {
+                alert('更新頭像失敗: ' + error.message);
+            } else {
+                // 2. 即時改變網頁上的頭像顯示並收起面板
+                document.getElementById('user-avatar-display').innerText = emojiIcon;
+                document.getElementById('avatar-selector-panel').classList.add('hidden');
+            }
         }
 
         function startScanner() {
@@ -326,11 +373,14 @@
                     if(index === 1) medal = '🥈';
                     if(index === 2) medal = '🥉';
 
+                    // 🆕 排行榜改為顯示玩家儲存的 avatar_url (Emoji)
                     const row = `
                         <tr class="hover:bg-slate-700/50">
                             <td class="p-3 text-center font-bold">${medal}</td>
                             <td class="p-3 flex items-center gap-2">
-                                <div class="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs">👤</div>
+                                <div class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-sm">
+                                    ${player.avatar_url || '🥏'}
+                                </div>
                                 <span class="${player.id === currentUser?.id ? 'text-amber-400 font-bold' : ''}">${player.username}</span>
                             </td>
                             <td class="p-3 text-right font-black text-amber-400">${player.stars} ⭐</td>
