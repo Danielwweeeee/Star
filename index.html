@@ -23,17 +23,39 @@
         </header>
 
         <main class="flex-grow">
-            <div id="page-login" class="page active text-center py-10">
-                <p class="mb-6 text-slate-300">歡迎來到陀螺戰星網！請先登入以記錄你的戰績。</p>
-                <button id="btn-google-login" class="w-full bg-white text-slate-900 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-lg hover:bg-slate-100 transition">
-                    <img src="https://www.google.com/favicon.ico" class="w-5 h-5" alt="Google">
-                    使用 Google 帳號登入
-                </button>
+            <div id="page-login" class="page active space-y-6 py-6">
+                <div class="text-center">
+                    <p class="text-slate-300">歡迎來到陀螺戰星網！請登入或註冊新帳號。</p>
+                </div>
+                
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">玩家暱稱 (只限新註冊填寫)</label>
+                        <input id="auth-username" type="text" placeholder="例如：陀螺王阿豪" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">登入帳號 (Email 格式)</label>
+                        <input id="auth-email" type="email" placeholder="example@mail.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">密碼</label>
+                        <input id="auth-password" type="password" placeholder="至少 6 位數" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                    </div>
+
+                    <div class="flex gap-4 pt-2">
+                        <button id="btn-login" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-3 rounded-lg transition text-sm">
+                            🔑 登入
+                        </button>
+                        <button id="btn-register" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition text-sm">
+                            📝 註冊新帳號
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div id="page-dashboard" class="page space-y-6">
                 <div class="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700 shadow-xl">
-                    <img id="user-avatar" class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 mb-2" src="" alt="Avatar">
+                    <div class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 mb-2 bg-slate-900 flex items-center justify-center text-3xl">🥏</div>
                     <h2 id="user-name" class="text-xl font-bold">玩家名字</h2>
                     
                     <div class="mt-4 bg-slate-900 p-4 rounded-xl">
@@ -70,7 +92,7 @@
                             </tr>
                         </thead>
                         <tbody id="leaderboard-body" class="divide-y divide-slate-700 text-sm">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -93,7 +115,6 @@
     </div>
 
     <script>
-        // === ⚠️ 請替換成你自己的 Supabase 網址同埋 API Key ===
         const SUPABASE_URL = 'https://rqeeoseodyyqoowzjdro.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_kZOI0G-2URfup1lKzME3uw_1tgvzMDl';
         
@@ -101,7 +122,6 @@
         let currentUser = null;
         let html5QrcodeScanner = null;
 
-        // 初始化檢查登入狀態
         window.onload = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
@@ -110,7 +130,6 @@
                 switchPage('login');
             }
             
-            // 監聽登入狀態改變
             supabase.auth.onAuthStateChange((event, session) => {
                 if (session) {
                     handleUserLogin(session.user);
@@ -121,37 +140,70 @@
             });
         };
 
-        // 頁面切換功能
         function switchPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.add('active');
-            
-            // 如果離開掃描頁面，關閉相機
             if (pageId !== 'scan' && html5QrcodeScanner) {
                 html5QrcodeScanner.clear();
             }
         }
 
-        // Google 登入按鈕
-        document.getElementById('btn-google-login').addEventListener('click', async () => {
-            await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.href }
+        // 🛠️ 新增：註冊邏輯
+        document.getElementById('btn-register').addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const username = document.getElementById('auth-username').value || '未知陀螺手';
+
+            if(!email || !password) {
+                alert('請填寫帳號(Email)和密碼！');
+                return;
+            }
+
+            // 呼叫 Supabase 註冊
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: { full_name: username } // 將玩家名存入 Metadata
+                }
             });
+
+            if (error) {
+                alert('註冊失敗: ' + error.message);
+            } else {
+                alert('註冊成功！系統已為你登入。');
+            }
         });
 
-        // 登出按鈕
+        // 🛠️ 新增：登入邏輯
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+
+            if(!email || !password) {
+                alert('請填寫帳號和密碼！');
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                alert('登入失敗: ' + error.message);
+            }
+        });
+
         document.getElementById('btn-logout').addEventListener('click', async () => {
             await supabase.auth.signOut();
         });
 
-        // 處理玩家登入後的資料邏輯
         async function handleUserLogin(user) {
             currentUser = user;
             document.getElementById('bottom-nav').classList.remove('hidden');
             switchPage('dashboard');
 
-            // 1. 檢查資料庫（profiles表）有冇呢個玩家，冇就創建（初始10粒星）
             let { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*')
@@ -159,13 +211,14 @@
                 .single();
 
             if (!profile) {
+                // 如果是新註冊用戶，自動在 profiles 資料表建檔（初始10粒星）
                 const { data: newProfile, error: insertError } = await supabase
                     .from('profiles')
                     .insert([
                         { 
                             id: user.id, 
                             username: user.user_metadata.full_name || '未知陀螺手', 
-                            avatar_url: user.user_metadata.avatar_url || '', 
+                            avatar_url: 'https://placehold.co/150', // 預設無頭像
                             stars: 10 
                         }
                     ])
@@ -174,13 +227,10 @@
                 profile = newProfile;
             }
 
-            // 2. 顯示玩家資料
             document.getElementById('user-name').innerText = profile.username;
-            document.getElementById('user-avatar').src = profile.avatar_url;
             document.getElementById('user-stars').innerText = profile.stars;
 
-            // 3. 生成玩家專屬的 QR Code (內容放玩家的 User ID)
-            document.getElementById("qrcode").innerHTML = ""; // 清空舊的
+            document.getElementById("qrcode").innerHTML = "";
             new QRCode(document.getElementById("qrcode"), {
                 text: profile.id,
                 width: 150,
@@ -190,24 +240,20 @@
             });
         }
 
-        // 啟動相機掃描對手 QR Code
         function startScanner() {
             switchPage('scan');
-            
             html5QrcodeScanner = new Html5Qrcode("reader");
             html5QrcodeScanner.start(
                 { facingMode: "environment" }, 
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 async (decodedText) => {
-                    // 掃描成功，decodedText 就是對方的 user_id
                     html5QrcodeScanner.stop();
                     await handleBattleWin(decodedText);
                 },
-                (errorMessage) => { /* 忽略掃描中的錯誤 */ }
+                (errorMessage) => {}
             ).catch(err => alert("無法啟動相機: " + err));
         }
 
-        // 核心對戰邏輯：你掃描對方 = 你打贏左對方
         async function handleBattleWin(loserId) {
             if (loserId === currentUser.id) {
                 alert("唔可以自己同自己打呀！😂");
@@ -215,7 +261,6 @@
                 return;
             }
 
-            // 1. 先確認輸家重有冇星星
             let { data: loserProfile } = await supabase.from('profiles').select('stars, username').eq('id', loserId).single();
             
             if (!loserProfile) {
@@ -230,26 +275,20 @@
                 return;
             }
 
-            // 2. 扣除輸家一粒星
             await supabase.from('profiles').update({ stars: loserProfile.stars - 1 }).eq('id', loserId);
-
-            // 3. 加我一粒星
             let { data: myProfile } = await supabase.from('profiles').select('stars').eq('id', currentUser.id).single();
             await supabase.from('profiles').update({ stars: myProfile.stars + 1 }).eq('id', currentUser.id);
 
             alert(`🎉 恭喜！你打贏咗 ${loserProfile.username}，成功奪取 1 粒星星！`);
-            
-            // 重新刷新個人頁面
             handleUserLogin(currentUser);
         }
 
-        // 載入排行榜資料
         async function loadLeaderboard() {
             let { data: profiles, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .order('stars', { ascending: false })
-                .limit(20); // 顯示前20名
+                .limit(20);
 
             const tbody = document.getElementById('leaderboard-body');
             tbody.innerHTML = '';
@@ -265,7 +304,7 @@
                         <tr class="hover:bg-slate-700/50">
                             <td class="p-3 text-center font-bold">${medal}</td>
                             <td class="p-3 flex items-center gap-2">
-                                <img src="${player.avatar_url}" class="w-6 h-6 rounded-full" alt="">
+                                <div class="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs">👤</div>
                                 <span class="${player.id === currentUser?.id ? 'text-amber-400 font-bold' : ''}">${player.username}</span>
                             </td>
                             <td class="p-3 text-right font-black text-amber-400">${player.stars} ⭐</td>
