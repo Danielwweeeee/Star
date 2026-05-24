@@ -118,19 +118,20 @@
         const SUPABASE_URL = 'https://rqeeoseodyyqoowzjdro.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_kZOI0G-2URfup1lKzME3uw_1tgvzMDl';
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // 🛠️ 修正：將變數名改為 supabaseClient 避免與 SDK 衝突
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUser = null;
         let html5QrcodeScanner = null;
 
         window.onload = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 handleUserLogin(session.user);
             } else {
                 switchPage('login');
             }
             
-            supabase.auth.onAuthStateChange((event, session) => {
+            supabaseClient.auth.onAuthStateChange((event, session) => {
                 if (session) {
                     handleUserLogin(session.user);
                 } else {
@@ -148,7 +149,7 @@
             }
         }
 
-        // 🛠️ 新增：註冊邏輯
+        // 註冊邏輯
         document.getElementById('btn-register').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
@@ -159,12 +160,11 @@
                 return;
             }
 
-            // 呼叫 Supabase 註冊
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await supabaseClient.auth.signUp({
                 email: email,
                 password: password,
                 options: {
-                    data: { full_name: username } // 將玩家名存入 Metadata
+                    data: { full_name: username }
                 }
             });
 
@@ -175,7 +175,7 @@
             }
         });
 
-        // 🛠️ 新增：登入邏輯
+        // 登入邏輯
         document.getElementById('btn-login').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
@@ -185,7 +185,7 @@
                 return;
             }
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });
@@ -196,7 +196,7 @@
         });
 
         document.getElementById('btn-logout').addEventListener('click', async () => {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
         });
 
         async function handleUserLogin(user) {
@@ -204,21 +204,20 @@
             document.getElementById('bottom-nav').classList.remove('hidden');
             switchPage('dashboard');
 
-            let { data: profile, error } = await supabase
+            let { data: profile, error } = await supabaseClient
                 .from('profiles')
                 .select('*')
                 .eq('id', user.id)
                 .single();
 
             if (!profile) {
-                // 如果是新註冊用戶，自動在 profiles 資料表建檔（初始10粒星）
-                const { data: newProfile, error: insertError } = await supabase
+                const { data: newProfile, error: insertError } = await supabaseClient
                     .from('profiles')
                     .insert([
                         { 
                             id: user.id, 
                             username: user.user_metadata.full_name || '未知陀螺手', 
-                            avatar_url: 'https://placehold.co/150', // 預設無頭像
+                            avatar_url: 'https://placehold.co/150',
                             stars: 10 
                         }
                     ])
@@ -261,7 +260,7 @@
                 return;
             }
 
-            let { data: loserProfile } = await supabase.from('profiles').select('stars, username').eq('id', loserId).single();
+            let { data: loserProfile } = await supabaseClient.from('profiles').select('stars, username').eq('id', loserId).single();
             
             if (!loserProfile) {
                 alert("找不到該玩家的資料！");
@@ -275,16 +274,16 @@
                 return;
             }
 
-            await supabase.from('profiles').update({ stars: loserProfile.stars - 1 }).eq('id', loserId);
-            let { data: myProfile } = await supabase.from('profiles').select('stars').eq('id', currentUser.id).single();
-            await supabase.from('profiles').update({ stars: myProfile.stars + 1 }).eq('id', currentUser.id);
+            await supabaseClient.from('profiles').update({ stars: loserProfile.stars - 1 }).eq('id', loserId);
+            let { data: myProfile } = await supabaseClient.from('profiles').select('stars').eq('id', currentUser.id).single();
+            await supabaseClient.from('profiles').update({ stars: myProfile.stars + 1 }).eq('id', currentUser.id);
 
             alert(`🎉 恭喜！你打贏咗 ${loserProfile.username}，成功奪取 1 粒星星！`);
             handleUserLogin(currentUser);
         }
 
         async function loadLeaderboard() {
-            let { data: profiles, error } = await supabase
+            let { data: profiles, error } = await supabaseClient
                 .from('profiles')
                 .select('*')
                 .order('stars', { ascending: false })
