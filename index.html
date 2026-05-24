@@ -103,7 +103,7 @@
                         <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🔑 輸入 Room Code 加入</h4>
                         <div class="flex gap-2">
                             <input id="input-join-code" type="text" placeholder="請輸入 Room Code" class="flex-grow bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white uppercase font-bold">
-                            <button onclick="joinRoomByCode()" class="bg-slate-700 text-white font-bold px-5 rounded-lg text-xs cursor-pointer">加入</button>
+                            <button onclick="joinRoomByCode()" class="bg-slate-700 text-white font-bold px-5 rounded-lg text-xs transition cursor-pointer">加入</button>
                         </div>
                     </div>
                 </div>
@@ -111,35 +111,52 @@
                 <div id="room-active-section" class="hidden space-y-4">
                     <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
                         <div class="flex justify-between items-center mb-2">
-                            <h4 id="manage-room-title" class="font-bold text-amber-400 text-sm">房間：未命名</h4>
-                            <span id="manage-tournament-status" class="text-xs bg-slate-900 px-2 py-0.5 rounded border border-slate-700 text-slate-400">準備中</span>
+                            <h4 id="manage-room-title" class="font-bold text-amber-400 text-sm">房間：連線中...</h4>
+                            <div class="flex gap-2">
+                                <button onclick="refreshSwissPanel()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-slate-200">🔄 刷新名單</button>
+                                <span id="manage-tournament-status" class="text-xs bg-slate-900 px-2 py-0.5 rounded border border-slate-700 text-slate-400">setup</span>
+                            </div>
                         </div>
                         <p class="text-[11px] text-slate-400">提示：私人賽事完全獨立，此處勝負不會增減你的大廳總星數。</p>
                     </div>
 
                     <div id="swiss-setup-panel" class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
-                        <h5 class="text-xs font-bold uppercase text-slate-400">1. 配置參賽名單與賽制</h5>
+                        <div class="flex justify-between items-center">
+                            <h5 class="text-xs font-bold uppercase text-slate-400">1. 配置參賽名單與賽制</h5>
+                            <span class="text-[10px] text-amber-400 font-bold">目前總人數: <span id="text-player-count">0</span> 人</span>
+                        </div>
+                        
                         <div>
                             <label class="text-xs text-slate-400">預計比賽輪數 (Rounds)：</label>
-                            <select id="select-total-rounds" class="bg-slate-900 border border-slate-700 text-xs p-1 rounded mt-1 text-amber-400 font-bold">
+                            <select id="select-total-rounds" class="w-full bg-slate-900 border border-slate-700 text-xs p-2 rounded mt-1 text-amber-400 font-bold">
                                 <option value="2">2 輪 (適合 3-4 人)</option>
                                 <option value="3" selected>3 輪 (適合 5-8 人)</option>
                                 <option value="4">4 輪 (適合 9-16 人)</option>
                                 <option value="5">5 輪 (適合 17-32 人)</option>
                             </select>
                         </div>
-                        <div>
-                            <p class="text-xs text-slate-400 mb-2">勾選本局實際要參賽的陀螺手（未勾選將不加入配對）：</p>
-                            <div id="swiss-player-checkboxes" class="space-y-1 bg-slate-900 p-2 rounded max-h-40 overflow-y-auto text-xs">
-                                </div>
+
+                        <div id="creator-add-player-box" class="hidden bg-slate-900/50 p-2.5 rounded border border-slate-700/60 space-y-2">
+                            <p class="text-[11px] text-amber-400 font-semibold">➕ 房主手動加人（適合現場代為參賽登記）：</p>
+                            <div class="flex gap-2">
+                                <input id="input-manual-player" type="text" placeholder="手動輸入選手稱呼 (如: 小明)" class="flex-grow bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                                <button onclick="addManualPlayer()" class="bg-emerald-600 text-white font-bold text-xs px-3 rounded hover:bg-emerald-500">新增</button>
+                            </div>
                         </div>
-                        <button id="btn-start-tournament" onclick="startTournament()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded text-xs hidden">🚀 鎖定名單並生成第一輪瑞士制配對</button>
+
+                        <div>
+                            <p class="text-xs text-slate-400 mb-2">勾選實際要參與配對的陀螺手：</p>
+                            <div id="swiss-player-checkboxes" class="space-y-1.5 bg-slate-900 p-3 rounded-lg max-h-48 overflow-y-auto text-xs min-h-[50px]">
+                                <p class="text-slate-500 italic text-center py-2">正在載入房間選手...</p>
+                            </div>
+                        </div>
+                        <button id="btn-start-tournament" onclick="startTournament()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs hidden">🚀 鎖定名單並生成第一輪瑞士制配對</button>
                     </div>
 
                     <div id="swiss-ongoing-panel" class="hidden bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
                         <div class="flex justify-between items-center border-b border-slate-700 pb-2">
                             <h5 class="text-xs font-bold uppercase text-amber-400">📊 當前輪次：第 <span id="text-current-round-no">1</span> 輪</h5>
-                            <button id="btn-next-round" onclick="generateNextRound()" class="bg-amber-500 text-slate-900 px-2 py-0.5 rounded text-[10px] font-bold hidden">進入下一輪配對 ➡️</button>
+                            <button id="btn-next-round" onclick="generateNextRound()" class="bg-amber-500 hover:bg-amber-400 text-slate-900 px-3 py-1 rounded text-xs font-bold hidden">進入下一輪配對 ➡️</button>
                         </div>
                         <div id="swiss-matches-list" class="space-y-2">
                             </div>
@@ -150,7 +167,7 @@
                         <table class="w-full text-xs text-left border-collapse">
                             <thead>
                                 <tr class="bg-slate-900 text-slate-400">
-                                    <th class="p-2">名次</th>
+                                    <th class="p-2 w-12">名次</th>
                                     <th class="p-2">選手</th>
                                     <th class="p-2 text-right">賽事積分</th>
                                 </tr>
@@ -158,9 +175,10 @@
                             <tbody id="swiss-leaderboard-body" class="divide-y divide-slate-700">
                                 </tbody>
                         </table>
+                        <button id="btn-reset-tournament" onclick="resetTournament()" class="w-full mt-3 bg-slate-900 hover:bg-red-950/40 border border-slate-700 hover:border-red-900 text-[11px] text-slate-400 hover:text-red-400 py-1 rounded transition hidden">⚠️ 清除本次賽事，重新開放報名</button>
                     </div>
 
-                    <button onclick="leaveToPublicRoom()" class="w-full bg-red-950/40 border border-red-900 text-red-400 py-2 rounded text-xs">退出房間，返回全球大廳</button>
+                    <button onclick="leaveToPublicRoom()" class="w-full bg-red-950/40 border border-red-900 text-red-400 py-2.5 rounded-lg text-xs">退出房間，返回全球大廳</button>
                 </div>
             </div>
 
@@ -230,15 +248,13 @@
             const password = document.getElementById('login-password').value;
             const username = document.getElementById('login-username-field').value || '新陀螺手';
             if(!email || !password) return alert('請填寫完整帳密！');
-            const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { data: { full_name: username } } });
-            if (error) alert('註冊失敗: ' + error.message);
+            await supabaseClient.auth.signUp({ email, password, options: { data: { full_name: username } } });
         });
 
         document.getElementById('btn-login').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) alert('登入失敗: ' + error.message);
+            await supabaseClient.auth.signInWithPassword({ email, password });
         });
 
         document.getElementById('btn-logout').addEventListener('click', async () => {
@@ -316,6 +332,10 @@
                 document.getElementById('room-setup-section').classList.add('hidden');
                 document.getElementById('room-active-section').classList.remove('hidden');
                 document.getElementById('manage-room-title').innerText = `房間：${currentRoomName}`;
+                
+                // 強制執行防空窗自動補登機制
+                await supabaseClient.from('tournament_players').insert([{ room_id: currentRoomId, user_id: currentUser.id }], { onConflict: 'room_id,user_id' });
+                
                 await refreshSwissPanel();
             }
         }
@@ -355,57 +375,95 @@
             await supabaseClient.from('profiles').update({ current_room_id: roomId }).eq('id', currentUser.id);
             
             if (roomId) {
-                // 自動將自己註冊加入該房間的瑞士制選手清單
                 await supabaseClient.from('tournament_players').insert([{ room_id: roomId, user_id: currentUser.id }], { onConflict: 'room_id,user_id' });
                 const { data: r } = await supabaseClient.from('rooms').select('creator_id').eq('id', roomId).single();
                 if (r) isRoomCreator = (r.creator_id === currentUser.id);
             }
         }
 
-        // 刷新瑞士制控制台
+        // 手動新增臨時玩家功能（完美控制人數）
+        async function addManualPlayer() {
+            if (!isRoomCreator || !currentRoomId) return;
+            const name = document.getElementById('input-manual-player').value.trim();
+            if (!name) return alert('請輸入選手名稱！');
+
+            // 1. 在 profiles 建立一個虛擬的臨時玩家
+            const fakeId = gen_random_uuid_v4();
+            const { error: pError } = await supabaseClient.from('profiles').insert([
+                { id: fakeId, username: `[臨時] ${name}`, avatar_url: '🤖', stars: 0, current_room_id: currentRoomId }
+            ]);
+
+            if (pError) return alert('新增失敗：' + pError.message);
+
+            // 2. 加入選手清單
+            await supabaseClient.from('tournament_players').insert([{ room_id: currentRoomId, user_id: fakeId }]);
+            document.getElementById('input-manual-player').value = '';
+            await refreshSwissPanel();
+        }
+
+        function gen_random_uuid_v4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // 刷新與渲染瑞士制面板
         async function refreshSwissPanel() {
             if (!currentRoomId) return;
 
-            // 1. 獲取最新賽事房態
             const { data: room } = await supabaseClient.from('rooms').select('*').eq('id', currentRoomId).single();
-            document.getElementById('manage-tournament-status').innerText = `賽事狀態：${room.tournament_status}`;
+            document.getElementById('manage-tournament-status').innerText = room.tournament_status.toUpperCase();
             document.getElementById('text-current-round-no').innerText = room.current_round;
 
-            // 2. 獲取選手名單
+            // 顯示或隱藏管理員專用加人欄位與清除按鈕
+            if (isRoomCreator) {
+                document.getElementById('btn-reset-tournament').classList.remove('hidden');
+                if (room.tournament_status === 'setup') {
+                    document.getElementById('creator-add-player-box').classList.remove('hidden');
+                } else {
+                    document.getElementById('creator-add-player-box').classList.add('hidden');
+                }
+            }
+
+            // 獲取參賽者名單
             const { data: players } = await supabaseClient.from('tournament_players').select('*, profiles(username)').eq('room_id', currentRoomId);
-            
-            // 3. 獲取即時積分榜渲染
+            document.getElementById('text-player-count').innerText = players ? players.length : 0;
+
+            // 渲染積分榜
             const swissTbody = document.getElementById('swiss-leaderboard-body');
             swissTbody.innerHTML = '';
-            const sortedPlayers = [...players].sort((a,b) => b.points - a.points);
+            const sortedPlayers = [...(players || [])].sort((a,b) => b.points - a.points);
             sortedPlayers.forEach((p, idx) => {
-                swissTbody.innerHTML += `<tr><td class="p-2">${idx+1}</td><td class="p-2">${p.profiles?.username || '未知'}</td><td class="p-2 text-right text-amber-400 font-bold">${p.points} 分</td></tr>`;
+                swissTbody.innerHTML += `<tr><td class="p-2 font-bold">${idx+1}</td><td class="p-2">${p.profiles?.username || '未知'}</td><td class="p-2 text-right text-amber-400 font-bold">${p.points} 分</td></tr>`;
             });
 
-            // 4. 分流渲染面板狀態
             const startBtn = document.getElementById('btn-start-tournament');
             if (room.tournament_status === 'setup') {
                 document.getElementById('swiss-setup-panel').classList.remove('hidden');
                 document.getElementById('swiss-ongoing-panel').classList.add('hidden');
                 
-                // 渲染房主專屬的可選玩家核取方塊
                 const checkboxContainer = document.getElementById('swiss-player-checkboxes');
                 checkboxContainer.innerHTML = '';
-                players.forEach(p => {
-                    checkboxContainer.innerHTML += `
-                        <label class="flex items-center gap-2 p-1 hover:bg-slate-800">
-                            <input type="checkbox" class="player-swiss-toggle" data-uid="${p.user_id}" ${p.is_active ? 'checked' : ''} ${isRoomCreator ? '' : 'disabled'}>
-                            <span>${p.profiles?.username || '玩家'}</span>
-                        </label>
-                    `;
-                });
-                if (isRoomCreator) startBtn.classList.remove('hidden');
+                
+                if (players && players.length > 0) {
+                    players.forEach(p => {
+                        checkboxContainer.innerHTML += `
+                            <label class="flex items-center justify-between p-1.5 hover:bg-slate-800 rounded bg-slate-900/60 border border-slate-700/40">
+                                <span class="flex items-center gap-2">
+                                    <input type="checkbox" class="player-swiss-toggle w-4 h-4 accent-amber-500" data-uid="${p.user_id}" ${p.is_active ? 'checked' : ''} ${isRoomCreator ? '' : 'disabled'}>
+                                    <span class="font-medium">${p.profiles?.username || '玩家'}</span>
+                                </span>
+                            </label>
+                        `;
+                    });
+                } else {
+                    checkboxContainer.innerHTML = `<p class="text-slate-500 text-center py-2">尚無人進房，請點右上方刷新</p>`;
+                }
+                if (isRoomCreator && players && players.length >= 2) startBtn.classList.remove('hidden');
             } else {
-                // 賽事進行中或結束
                 document.getElementById('swiss-setup-panel').classList.add('hidden');
                 document.getElementById('swiss-ongoing-panel').classList.remove('hidden');
-                
-                // 讀取當前輪次的配對
                 await loadCurrentRoundMatches(room.current_round, room.tournament_status);
             }
         }
@@ -415,7 +473,6 @@
             if (!isRoomCreator) return;
             const rounds = parseInt(document.getElementById('select-total-rounds').value);
             
-            // 收集勾選要參賽的玩家
             const toggles = document.querySelectorAll('.player-swiss-toggle');
             let activeUserIds = [];
             for (let t of toggles) {
@@ -424,12 +481,9 @@
                 if (t.checked) activeUserIds.push(uid);
             }
 
-            if (activeUserIds.length < 2) return alert('至少需要 2 位玩家勾選參賽才能開啟瑞士制！');
+            if (activeUserIds.length < 2) return alert('調整參賽人數：至少需要 2 位被勾選的玩家才能進行配對！');
 
-            // 更新房間狀態為進行中、第一輪
             await supabaseClient.from('rooms').update({ tournament_status: 'active', current_round: 1, total_rounds: rounds }).eq('id', currentRoomId);
-            
-            // 執行第一輪隨機對打配對
             await makePairsAndInsert(activeUserIds, 1);
             await refreshSwissPanel();
         }
@@ -438,25 +492,24 @@
         async function loadCurrentRoundMatches(roundNo, status) {
             const { data: matches } = await supabaseClient.from('tournament_matches').select('*').eq('room_id', currentRoomId).eq('round_no', roundNo);
             const { data: players } = await supabaseClient.from('profiles').select('id, username');
-            const pMap = {}; players.forEach(p => pMap[p.id] = p.username);
+            const pMap = {}; players?.forEach(p => pMap[p.id] = p.username);
 
             const container = document.getElementById('swiss-matches-list');
             container.innerHTML = '';
-
             let allReported = true;
 
-            matches.forEach(m => {
+            matches?.forEach(m => {
                 if (!m.is_reported && m.player2_id !== null) allReported = false;
                 const p1Name = pMap[m.player1_id] || '未知';
                 const p2Name = m.player2_id ? (pMap[m.player2_id] || '未知') : '🔴 輪空 (直接獲勝)';
 
-                let actionHtml = `<span class="text-xs text-emerald-400 font-bold">👑 勝者: ${pMap[m.winner_id]}</span>`;
+                let actionHtml = `<span class="text-xs text-emerald-400 font-bold">👑 勝: ${pMap[m.winner_id] || ''}</span>`;
                 if (!m.is_reported && m.player2_id !== null) {
                     if (isRoomCreator) {
                         actionHtml = `
                             <div class="flex gap-1">
-                                <button onclick="reportMatchWinner('${m.id}', '${m.player1_id}')" class="bg-slate-700 hover:bg-amber-500 hover:text-slate-900 px-2 py-0.5 rounded text-[11px]">1號勝</button>
-                                <button onclick="reportMatchWinner('${m.id}', '${m.player2_id}')" class="bg-slate-700 hover:bg-amber-500 hover:text-slate-900 px-2 py-0.5 rounded text-[11px]">2號勝</button>
+                                <button onclick="reportMatchWinner('${m.id}', '${m.player1_id}')" class="bg-slate-700 hover:bg-amber-500 hover:text-slate-900 px-2 py-1 rounded text-[11px] font-bold">1號勝</button>
+                                <button onclick="reportMatchWinner('${m.id}', '${m.player2_id}')" class="bg-slate-700 hover:bg-amber-500 hover:text-slate-900 px-2 py-1 rounded text-[11px] font-bold">2號勝</button>
                             </div>
                         `;
                     } else {
@@ -466,7 +519,7 @@
 
                 container.innerHTML += `
                     <div class="bg-slate-900 p-2.5 rounded border border-slate-700 flex justify-between items-center text-xs">
-                        <div class="space-y-0.5">
+                        <div class="space-y-1">
                             <div class="${m.winner_id === m.player1_id ? 'text-amber-400 font-bold':''}">(1) ${p1Name}</div>
                             <div class="${m.winner_id === m.player2_id ? 'text-amber-400 font-bold':''}">(2) ${p2Name}</div>
                         </div>
@@ -476,33 +529,23 @@
             });
 
             const nextBtn = document.getElementById('btn-next-round');
-            if (isRoomCreator && allReported && status === 'active') {
-                nextBtn.classList.remove('hidden');
-            } else {
-                nextBtn.classList.add('hidden');
-            }
+            if (isRoomCreator && allReported && status === 'active') nextBtn.classList.remove('hidden');
+            else nextBtn.classList.add('hidden');
         }
 
-        // 提交單場勝負並即時派發賽事積分
         async function reportMatchWinner(matchId, winnerId) {
             await supabaseClient.from('tournament_matches').update({ winner_id: winnerId, is_reported: true }).eq('id', matchId);
-            
-            // 重新計分
             const { data: allMatches } = await supabaseClient.from('tournament_matches').select('*').eq('room_id', currentRoomId);
             const { data: tPlayers } = await supabaseClient.from('tournament_players').select('*').eq('room_id', currentRoomId);
             
             for (let tp of tPlayers) {
                 let pScore = 0;
-                allMatches.forEach(m => {
-                    if (m.winner_id === tp.user_id) pScore += 1; // 贏一盤得 1 分
-                });
+                allMatches?.forEach(m => { if (m.winner_id === tp.user_id) pScore += 1; });
                 await supabaseClient.from('tournament_players').update({ points: pScore }).eq('room_id', currentRoomId).eq('user_id', tp.user_id);
             }
-
             await refreshSwissPanel();
         }
 
-        // 計算並生成下一輪瑞士制配對
         async function generateNextRound() {
             const { data: room } = await supabaseClient.from('rooms').select('*').eq('id', currentRoomId).single();
             const nextRoundNo = room.current_round + 1;
@@ -510,11 +553,9 @@
             if (nextRoundNo > room.total_rounds) {
                 await supabaseClient.from('rooms').update({ tournament_status: 'finished' }).eq('id', currentRoomId);
                 alert('🏆 私人聯賽所有輪次已全部結束！恭喜積分榜首獲得冠軍！');
-                await refreshSwissPanel();
-                return;
+                await refreshSwissPanel(); return;
             }
 
-            // 抓取出所有參賽選手並依照目前的賽事積分從高到低排序
             const { data: activePlayers } = await supabaseClient.from('tournament_players').select('*').eq('room_id', currentRoomId).eq('is_active', true).order('points', { ascending: false });
             let pIds = activePlayers.map(p => p.user_id);
 
@@ -523,28 +564,17 @@
             await refreshSwissPanel();
         }
 
-        // 瑞士制核心配對演算與寫入
         async function makePairsAndInsert(playerIds, roundNo) {
-            let pool = [...playerIds];
-            let pairs = [];
-
-            // 1. 如果人數是奇數，最後一名自動輪空 (Bye)
+            let pool = [...playerIds]; let pairs = [];
             if (pool.length % 2 !== 0) {
-                let byePlayer = pool.pop(); // 彈出積分最低的玩家
+                let byePlayer = pool.pop();
                 pairs.push({ room_id: currentRoomId, round_no: roundNo, player1_id: byePlayer, player2_id: null, winner_id: byePlayer, is_reported: true });
             }
-
-            // 2. 瑞士制相鄰積分配對
             while (pool.length > 0) {
-                let p1 = pool.shift();
-                let p2 = pool.shift(); // 取出積分最接近的下一位
-                pairs.push({ room_id: currentRoomId, round_no: roundNo, player1_id: p1, player2_id: p2, winner_id: null, is_reported: false });
+                pairs.push({ room_id: currentRoomId, round_no: roundNo, player1_id: pool.shift(), player2_id: pool.shift(), winner_id: null, is_reported: false });
             }
-
-            // 寫入對戰表
             await supabaseClient.from('tournament_matches').insert(pairs);
 
-            // 如果有輪空的玩家，直接為其增加該輪勝分
             for (let pr of pairs) {
                 if (pr.player2_id === null) {
                     const { data: tp } = await supabaseClient.from('tournament_players').select('points').eq('room_id', currentRoomId).eq('user_id', pr.player1_id).single();
@@ -553,41 +583,13 @@
             }
         }
 
-        // ==================== 大廳對戰搶星 (原邏輯不變) ====================
-        function startScanner() {
-            switchPage('scan');
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
-                async (decodedText) => { html5QrcodeScanner.stop(); await handleBattleWin(decodedText); }, (err) => {}
-            ).catch(e => alert("相機啟動失敗"));
+        // 清除重置錦標賽
+        async function resetTournament() {
+            if (!isRoomCreator || !confirm('確定要清除目前的瑞士制記錄，重新調整人數或輪數嗎？（積分將歸零）')) return;
+            await supabaseClient.from('rooms').update({ tournament_status: 'setup', current_round: 0 }).eq('id', currentRoomId);
+            await supabaseClient.from('tournament_matches').delete().eq('room_id', currentRoomId);
+            await supabaseClient.from('tournament_players').update({ points: 0, is_active: true }).eq('room_id', currentRoomId);
+            await refreshSwissPanel();
         }
 
-        async function handleBattleWin(loserId) {
-            if (loserId === currentUser.id) return (alert("不能跟自己對戰！"), switchPage('dashboard'));
-            let { data: loser } = await supabaseClient.from('profiles').select('*').eq('id', loserId).single();
-            let { data: mine } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-
-            if (mine.current_room_id !== null || loser.current_room_id !== null) {
-                alert("⚠️ 大廳搶星功能只適用於「全球公開賽區」！\n私人房間請在聯賽面板中進行瑞士制計分！");
-                switchPage('dashboard'); return;
-            }
-            if (loser.stars <= 0) return (alert("對方沒星了"), switchPage('dashboard'));
-
-            await supabaseClient.from('profiles').update({ stars: loser.stars - 1 }).eq('id', loserId);
-            await supabaseClient.from('profiles').update({ stars: mine.stars + 1 }).eq('id', currentUser.id);
-            alert(`🎉 大廳搶星成功！`);
-            handleUserLogin(currentUser);
-        }
-
-        async function loadLeaderboard() {
-            let { data: profiles } = await supabaseClient.from('profiles').select('*').is('current_room_id', null).order('stars', { ascending: false }).limit(20);
-            const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '';
-            profiles?.forEach((p, idx) => {
-                let medal = idx + 1; if(idx===0) medal='🥇'; if(idx===1) medal='🥈'; if(idx===2) medal='🥉';
-                let av = p.avatar_url?.startsWith('http') ? `<img src="${p.avatar_url}" class="w-full h-full object-cover">` : `<span class="text-sm">${p.avatar_url || '💧'}</span>`;
-                tbody.innerHTML += `<tr class="hover:bg-slate-700/50"><td class="p-3 text-center font-bold">${medal}</td><td class="p-3 flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">${av}</div><span>${p.username}</span></td><td class="p-3 text-right font-black text-amber-400">${p.stars} ⭐</td></tr>`;
-            });
-        }
-    </script>
-</body>
-</html>
+        // ==================== 大廳對戰搶
