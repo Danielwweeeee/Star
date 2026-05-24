@@ -31,11 +31,11 @@
                 <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">登入帳號 (Email)</label>
-                        <input id="login-email" type="email" placeholder="example@mail.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                        <input id="login-email" type="email" placeholder="example@mail.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400 text-white">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">密碼</label>
-                        <input id="login-password" type="password" placeholder="請輸入密碼" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                        <input id="login-password" type="password" placeholder="請輸入密碼" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400 text-white">
                     </div>
 
                     <button id="btn-login" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-3 rounded-lg transition text-sm">
@@ -58,15 +58,15 @@
                 <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">玩家暱稱</label>
-                        <input id="reg-username" type="text" placeholder="例如：陀螺王阿豪" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                        <input id="reg-username" type="text" placeholder="例如：陀螺王阿豪" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400 text-white">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">註冊帳號 (Email 格式)</label>
-                        <input id="reg-email" type="email" placeholder="example@mail.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                        <input id="reg-email" type="email" placeholder="example@mail.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400 text-white">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">設定密碼</label>
-                        <input id="reg-password" type="password" placeholder="至少 6 位數" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400">
+                        <input id="reg-password" type="password" placeholder="至少 6 位數" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-400 text-white">
                     </div>
 
                     <button id="btn-register" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition text-sm">
@@ -82,16 +82,16 @@
             </div>
 
             <div id="page-dashboard" class="page space-y-6">
-                <div class="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700 shadow-xl">
+                <div class="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700 shadow-xl relative">
                     
-                    <div class="relative inline-block group">
-                        <div id="user-avatar-display" class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 mb-2 bg-slate-900 flex items-center justify-center text-3xl cursor-pointer hover:scale-105 transition duration-200">🥏</div>
-                        <span class="absolute bottom-1 right-0 bg-amber-500 text-slate-900 text-[10px] font-bold px-1 rounded border border-slate-800">修改</span>
+                    <div class="relative inline-block mt-2">
+                        <div id="user-avatar-display" class="w-20 h-20 rounded-full mx-auto border-4 border-amber-400 bg-slate-900 flex items-center justify-center text-4xl cursor-pointer hover:scale-105 transition duration-200 select-none">🥏</div>
+                        <span class="absolute -bottom-1 right-0 bg-amber-500 text-slate-900 text-[10px] font-bold px-1 rounded border border-slate-800 cursor-pointer">修改</span>
                     </div>
 
-                    <h2 id="user-name" class="text-xl font-bold">玩家名字</h2>
+                    <h2 id="user-name" class="text-xl font-bold mt-2">玩家名字</h2>
                     
-                    <div id="avatar-selector-panel" class="hidden mt-4 p-3 bg-slate-900 rounded-xl border border-slate-700 animate-fadeIn">
+                    <div id="avatar-selector-panel" class="hidden mt-4 p-3 bg-slate-900 rounded-xl border border-slate-700">
                         <p class="text-xs text-slate-400 mb-2">請選擇你的陀螺手 Icon：</p>
                         <div class="grid grid-cols-4 gap-2 text-2xl">
                             <button onclick="changeAvatar('🥏')" class="p-2 hover:bg-slate-700 rounded transition">🥏</button>
@@ -186,7 +186,7 @@
                 }
             });
 
-            // 點擊大頭像顯示/隱藏選擇面板
+            // 點擊頭像區塊顯示或隱藏面板
             document.getElementById('user-avatar-display').addEventListener('click', () => {
                 const panel = document.getElementById('avatar-selector-panel');
                 panel.classList.toggle('hidden');
@@ -199,7 +199,6 @@
             if (pageId !== 'scan' && html5QrcodeScanner) {
                 html5QrcodeScanner.clear();
             }
-            // 切換頁面時自動收起頭像面板
             document.getElementById('avatar-selector-panel').classList.add('hidden');
         }
 
@@ -225,7 +224,7 @@
             if (error) {
                 alert('註冊失敗: ' + error.message);
             } else {
-                alert('註冊成功！系統已為你登入。');
+                alert('註冊成功！快去體驗吧！');
             }
         });
 
@@ -265,13 +264,13 @@
                 .single();
 
             if (!profile) {
-                const { data: newProfile, error: insertError } = await supabaseClient
+                const { data: newProfile } = await supabaseClient
                     .from('profiles')
                     .insert([
                         { 
                             id: user.id, 
                             username: user.user_metadata.full_name || '未知陀螺手', 
-                            avatar_url: '🥏', // 🆕 預設改用文字 Emoji 圖標
+                            avatar_url: '🥏', 
                             stars: 10 
                         }
                     ])
@@ -281,7 +280,14 @@
             }
 
             document.getElementById('user-name').innerText = profile.username;
-            document.getElementById('user-avatar-display').innerText = profile.avatar_url || '🥏';
+            
+            // 🔥 關鍵防錯修復：如果資料庫裡儲存的是舊的網址網址，強制將它轉為預設 Emoji 🥏
+            if (profile.avatar_url && profile.avatar_url.startsWith('http')) {
+                document.getElementById('user-avatar-display').innerText = '🥏';
+            } else {
+                document.getElementById('user-avatar-display').innerText = profile.avatar_url || '🥏';
+            }
+            
             document.getElementById('user-stars').innerText = profile.stars;
 
             document.getElementById("qrcode").innerHTML = "";
@@ -294,11 +300,10 @@
             });
         }
 
-        // 🆕 新增：修改頭像並儲存至 Supabase 的功能
+        // 修改頭像功能
         async function changeAvatar(emojiIcon) {
             if (!currentUser) return;
             
-            // 1. 更新 Supabase 資料庫
             const { error } = await supabaseClient
                 .from('profiles')
                 .update({ avatar_url: emojiIcon })
@@ -307,7 +312,6 @@
             if (error) {
                 alert('更新頭像失敗: ' + error.message);
             } else {
-                // 2. 即時改變網頁上的頭像顯示並收起面板
                 document.getElementById('user-avatar-display').innerText = emojiIcon;
                 document.getElementById('avatar-selector-panel').classList.add('hidden');
             }
@@ -343,7 +347,7 @@
             }
 
             if (loserProfile.stars <= 0) {
-                alert(`玩家 ${loserProfile.username} 已經冇晒星星（0粒星），你贏咗都攞唔到星！`);
+                alert(`玩家 ${loserProfile.username} 已經冇晒星星，無法奪取！`);
                 switchPage('dashboard');
                 return;
             }
@@ -373,13 +377,18 @@
                     if(index === 1) medal = '🥈';
                     if(index === 2) medal = '🥉';
 
-                    // 🆕 排行榜改為顯示玩家儲存的 avatar_url (Emoji)
+                    // 處理排行榜上的舊網址過濾，如果是網址就顯示 🥏
+                    let displayIcon = player.avatar_url;
+                    if (!displayIcon || displayIcon.startsWith('http')) {
+                        displayIcon = '🥏';
+                    }
+
                     const row = `
                         <tr class="hover:bg-slate-700/50">
                             <td class="p-3 text-center font-bold">${medal}</td>
                             <td class="p-3 flex items-center gap-2">
-                                <div class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-sm">
-                                    ${player.avatar_url || '🥏'}
+                                <div class="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-sm select-none">
+                                    ${displayIcon}
                                 </div>
                                 <span class="${player.id === currentUser?.id ? 'text-amber-400 font-bold' : ''}">${player.username}</span>
                             </td>
